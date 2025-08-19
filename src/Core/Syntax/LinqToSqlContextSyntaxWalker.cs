@@ -53,7 +53,7 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
     {
         var attribute = m.AttributeLists
             .SelectMany(a => a.Attributes)
-            .First(a => a.Name.ToString().Contains("FunctionAttribute"));
+            .First(a => a.Name.ToString().Contains("Function"));
 
         var nameArgument = attribute.ArgumentList?.Arguments
             .First(arg => arg.NameEquals?.Name.Identifier.Text == "Name");
@@ -146,7 +146,7 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
     {
         return method.AttributeLists
             .SelectMany(a => a.Attributes)
-            .Any(a => a.Name.ToString().Contains("FunctionAttribute"));
+            .Any(a => a.Name.ToString().Contains("Function"));
     }
 
     private string GetReturnType(MethodDeclarationSyntax method)

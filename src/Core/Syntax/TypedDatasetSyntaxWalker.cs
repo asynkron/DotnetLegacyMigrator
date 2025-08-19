@@ -113,7 +113,7 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
             // Check if the method has the desired attribute
             if (method.AttributeLists
                 .SelectMany(attrList => attrList.Attributes)
-                .Any(attr => attr.ToString().Contains("System.ComponentModel.DataObjectMethodAttribute")))
+                .Any(attr => attr.ToString().Contains("System.ComponentModel.DataObjectMethod")))
             {
                 methodsWithDataObjectMethod.Add(method);
             }

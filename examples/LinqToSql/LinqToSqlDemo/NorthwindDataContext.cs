@@ -14,4 +14,11 @@ public partial class NorthwindDataContext : DataContext
     public NorthwindDataContext(string connection) : base(connection)
     {
     }
+
+    // Example of a stored procedure mapped via FunctionAttribute
+    [Function(Name = "dbo.GetOrderById")]
+    public Order GetOrderById(int id)
+    {
+        return new Order();
+    }
 }

@@ -182,6 +182,8 @@ public static class CodeGenerator
     {
         var sb = new StringBuilder();
         sb.AppendLine("using Microsoft.EntityFrameworkCore;");
+        if (context.StoredProcedures.Count > 0)
+            sb.AppendLine("using System.Linq;");
         sb.AppendLine();
         sb.AppendLine($"public class {context.Name} : DbContext");
         sb.AppendLine("{");
@@ -194,6 +196,17 @@ public static class CodeGenerator
         foreach (var table in context.Tables.OrderBy(t => t.EntityType))
             sb.AppendLine($"        modelBuilder.ApplyConfiguration(new {table.EntityType}Configuration());");
         sb.AppendLine("    }");
+
+        // Emit stored procedure wrappers if any were discovered
+        foreach (var sp in context.StoredProcedures.OrderBy(s => s.MethodName))
+        {
+            var paramList = string.Join(", ", sp.Parameters.Select(p => $"{p.Type} {p.Name}"));
+            var argList = string.Join(", ", sp.Parameters.Select(p => p.Name));
+            sb.AppendLine();
+            sb.AppendLine($"    public IQueryable<{sp.ReturnType}> {sp.MethodName}({paramList}) =>");
+            sb.AppendLine($"        FromExpression(() => {sp.MethodName}({argList}));");
+        }
+
         sb.AppendLine("}");
         return sb.ToString().Trim();
     }

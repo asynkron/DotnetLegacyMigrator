@@ -88,4 +88,29 @@ namespace TypedDataSetDemo
             public string? Notes { get => (string?)this["Notes"]; set => this["Notes"] = value; }
         }
     }
+
+    // Minimal TableAdapter demonstrating a stored procedure
+    public partial class OrdersTableAdapter
+    {
+        private System.Data.SqlClient.SqlCommand[] _commandCollection = new System.Data.SqlClient.SqlCommand[1];
+        private System.Data.SqlClient.SqlCommand[] CommandCollection => _commandCollection;
+
+        public OrdersTableAdapter()
+        {
+            InitCommandCollection();
+        }
+
+        private void InitCommandCollection()
+        {
+            _commandCollection[0] = new System.Data.SqlClient.SqlCommand();
+            _commandCollection[0].CommandText = "dbo.GetOrdersByCustomer";
+        }
+
+        [System.ComponentModel.DataObjectMethod(System.ComponentModel.DataObjectMethodType.Select, false)]
+        public NorthwindDataSet.OrdersDataTable GetOrdersByCustomer(int customerId)
+        {
+            var command = this.CommandCollection[0];
+            return new NorthwindDataSet.OrdersDataTable();
+        }
+    }
 }
