@@ -29,11 +29,13 @@ public static class CodeGenerator
         sb.AppendLine("using System.ComponentModel.DataAnnotations;");
         sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
         sb.AppendLine();
-        foreach (var entity in entities)
+        // Sort entities to produce deterministic output
+        foreach (var entity in entities.OrderBy(e => e.Name))
         {
             sb.AppendLine($"[Table(\"{entity.TableName}\")]");
             sb.AppendLine($"public class {entity.Name}");
             sb.AppendLine("{");
+            // Preserve declaration order; input walkers already visit primary key first
             foreach (var prop in entity.Properties)
             {
                 if (prop.IsPrimaryKey)
@@ -61,7 +63,8 @@ public static class CodeGenerator
         sb.AppendLine();
         sb.AppendLine($"public class {context.Name} : DbContext");
         sb.AppendLine("{");
-        foreach (var table in context.Tables)
+        // Order tables by name so DbSet properties are emitted in a stable order
+        foreach (var table in context.Tables.OrderBy(t => t.Name))
             sb.AppendLine($"    public DbSet<{table.EntityType}> {table.Name} {{ get; set; }}");
         sb.AppendLine("}");
         return sb.ToString().Trim();
