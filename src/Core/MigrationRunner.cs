@@ -3,6 +3,8 @@ using DotnetLegacyMigrator.Syntax;
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.MSBuild;
+using Spectre.Console;
+using System.Text.RegularExpressions;
 
 namespace DotnetLegacyMigrator;
 
@@ -36,14 +38,17 @@ public class MigrationRunner
 
         Console.WriteLine($"Loading solution '{solutionPath}'");
         var solution = await workspace.OpenSolutionAsync(solutionPath);
-        var currentSolution = solution;
+
+        var allEntities = new List<Entity>();
+        var allContexts = new List<DataContext>();
 
         foreach (var project in solution.Projects)
         {
             foreach (var document in project.Documents)
             {
                 var syntaxRoot = await document.GetSyntaxRootAsync();
-                if (syntaxRoot == null) continue;
+                if (syntaxRoot == null)
+                    continue;
 
                 var nsWalker = new NamespaceWalker();
                 var entitySyntaxWalker = new TypedDatasetEntitySyntaxWalker();
@@ -56,8 +61,45 @@ public class MigrationRunner
                 if (entitySyntaxWalker.Entities.Any())
                 {
                     Console.WriteLine($"{entitySyntaxWalker.Entities.Count} entities discovered in {document.Name}.");
+                    allEntities.AddRange(entitySyntaxWalker.Entities);
                 }
+
+                if (contextSyntaxWalker.Contexts.Any())
+                    allContexts.AddRange(contextSyntaxWalker.Contexts);
             }
         }
+
+        if (allEntities.Any())
+        {
+            var entityCode = CodeGenerator.GenerateEntities(allEntities);
+            AnsiConsole.Write(new Rule("Generated Entities"));
+            AnsiConsole.MarkupLine(HighlightCSharp(entityCode));
+
+            var configCode = CodeGenerator.GenerateEntityConfigurations(allEntities);
+            AnsiConsole.Write(new Rule("Entity Configurations"));
+            AnsiConsole.MarkupLine(HighlightCSharp(configCode));
+        }
+
+        foreach (var ctx in allContexts)
+        {
+            var ctxCode = CodeGenerator.GenerateDataContext(ctx);
+            AnsiConsole.Write(new Rule($"Data Context: {ctx.Name}"));
+            AnsiConsole.MarkupLine(HighlightCSharp(ctxCode));
+        }
+    }
+
+    private static string HighlightCSharp(string code)
+    {
+        var escaped = Markup.Escape(code);
+        var keywords = new[]
+        {
+            "using", "namespace", "public", "class", "void", "return",
+            "new", "var", "int", "string", "async", "await", "List", "DbSet"
+        };
+
+        foreach (var keyword in keywords)
+            escaped = Regex.Replace(escaped, $"\\b{keyword}\\b", $"[yellow]{keyword}[/]", RegexOptions.Multiline);
+
+        return escaped;
     }
 }
