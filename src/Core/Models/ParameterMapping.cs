@@ -5,7 +5,7 @@ namespace DotnetLegacyMigrator.Models;
 /// </summary>
 public class ParameterMapping
 {
-    public string Name { get; set; }
-    public string Type { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
     public bool IsNullable { get; set; }
 }

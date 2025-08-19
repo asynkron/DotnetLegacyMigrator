@@ -5,6 +5,6 @@ namespace DotnetLegacyMigrator.Models;
 /// </summary>
 public class StoredProcedureResult
 {
-    public string Name { get; set; }
-    public List<EntityProperty> Properties { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public List<EntityProperty> Properties { get; set; } = new();
 }
