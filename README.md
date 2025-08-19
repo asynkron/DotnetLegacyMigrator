@@ -15,7 +15,13 @@ that runs on .NET 9.
 
 ## Quickstart
 
-1. Install the [`.NET 9 SDK`](https://dotnet.microsoft.com/download).
+1. Install the [`.NET 9.0.303 SDK`](https://dotnet.microsoft.com/download). If it's not installed, you can add it locally with:
+
+   ```bash
+   curl -L https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
+   bash dotnet-install.sh -v 9.0.303
+   export PATH="$HOME/.dotnet:$PATH"
+   ```
 2. Clone the repository:
 
    ```bash

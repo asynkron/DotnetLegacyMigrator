@@ -1,0 +1,22 @@
+public class OrderTasks
+{
+    private readonly IPaymentFacade _paymentFacade;
+    private readonly OrderConfig _orderConfig;
+    private readonly PaymentProcessor _paymentProcessor;
+    private readonly EmailSender _emailSender;
+    public OrderTasks(IPaymentFacade paymentFacade, OrderConfig orderConfig, PaymentProcessor paymentProcessor, EmailSender emailSender)
+    {
+        _paymentFacade = paymentFacade;
+        _orderConfig = orderConfig;
+        _paymentProcessor = paymentProcessor;
+        _emailSender = emailSender;
+    }
+
+    public void Run()
+    {
+        var processor = _paymentProcessor;
+        var facade = _paymentFacade;
+        var config = _orderConfig;
+        var sender = _emailSender;
+    }
+}
