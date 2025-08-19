@@ -1,0 +1,9 @@
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2">
+  <class name="Order" table="Orders">
+    <id name="Id" column="Id" type="Int32">
+      <generator class="native"/>
+    </id>
+    <property name="CustomerId" column="CustomerId" type="Int32" not-null="true"/>
+    <many-to-one name="Customer" class="Customer" column="CustomerId"/>
+  </class>
+</hibernate-mapping>
