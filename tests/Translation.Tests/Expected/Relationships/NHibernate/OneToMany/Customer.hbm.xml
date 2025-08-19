@@ -1,0 +1,11 @@
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2">
+  <class name="Customer" table="Customers">
+    <id name="Id" column="Id" type="Int32">
+      <generator class="native"/>
+    </id>
+    <bag name="Orders" inverse="true">
+      <key column="CustomerId"/>
+      <one-to-many class="Order"/>
+    </bag>
+  </class>
+</hibernate-mapping>

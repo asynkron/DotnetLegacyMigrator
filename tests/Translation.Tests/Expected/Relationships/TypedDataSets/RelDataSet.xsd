@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="RelDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+  <xs:element name="RelDataSet" msdata:IsDataSet="true">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+        <xs:element name="Customer">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Id" type="xs:int" />
+              <xs:element name="Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="Order">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Id" type="xs:int" />
+              <xs:element name="CustomerId" type="xs:int" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+    <xs:unique name="CustomerKey">
+      <xs:selector xpath=".//Customer" />
+      <xs:field xpath="Id" />
+    </xs:unique>
+    <xs:keyref name="OrderCustomer" refer="CustomerKey">
+      <xs:selector xpath=".//Order" />
+      <xs:field xpath="CustomerId" />
+    </xs:keyref>
+  </xs:element>
+</xs:schema>
