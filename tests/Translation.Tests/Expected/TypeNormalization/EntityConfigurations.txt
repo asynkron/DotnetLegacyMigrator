@@ -1,0 +1,18 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using System.Xml.Linq;
+
+public class DocConfiguration : IEntityTypeConfiguration<Doc>
+{
+    public void Configure(EntityTypeBuilder<Doc> builder)
+    {
+        builder.ToTable("Docs");
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id)
+            .HasColumnName("Id");
+        builder.Property(e => e.Content)
+            .HasColumnName("Content")
+            .HasColumnType("XML")
+            .HasConversion(v => v.ToString(), v => XElement.Parse(v));
+    }
+}

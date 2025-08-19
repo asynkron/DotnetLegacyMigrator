@@ -1,31 +1,17 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
 
-[Table("Courses")]
 public class Course
 {
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    [Column("Id")]
     public int Id { get; set; }
 
-    [InverseProperty(nameof(Student.Courses))]
-    [ForeignKey("CourseId")]
     public List<Student> Students { get; set; } = new();
 
 }
 
-[Table("Students")]
 public class Student
 {
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-    [Column("Id")]
     public int Id { get; set; }
 
-    [InverseProperty(nameof(Course.Students))]
-    [ForeignKey("StudentId")]
     public List<Course> Courses { get; set; } = new();
 
 }
