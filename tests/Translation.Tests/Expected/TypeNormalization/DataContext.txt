@@ -1,0 +1,11 @@
+using Microsoft.EntityFrameworkCore;
+
+public class DemoContext : DbContext
+{
+    public DbSet<Doc> Docs { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfiguration(new DocConfiguration());
+    }
+}

@@ -1,0 +1,10 @@
+using System.Collections.Generic;
+using System.Xml.Linq;
+
+public class Doc
+{
+    public int Id { get; set; }
+
+    public XElement? Content { get; set; }
+
+}

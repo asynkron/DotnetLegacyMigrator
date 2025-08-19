@@ -1,36 +1,23 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Collections.Generic;
 
-[Table("Customers")]
 public class Customers
 {
-    [Key]
-    [Column("CustomerID")]
     public int CustomerID { get; set; }
 
-    [Column("CompanyName", TypeName = "NVARCHAR(100)")]
     public string CompanyName { get; set; }
 
-    [Column("ContactName", TypeName = "NVARCHAR(50)")]
     public string? ContactName { get; set; }
 
 }
 
-[Table("Orders")]
 public class Orders
 {
-    [Key]
-    [Column("OrderID")]
     public int OrderID { get; set; }
 
-    [Column("CustomerID")]
     public int? CustomerID { get; set; }
 
-    [Column("Description", TypeName = "NVARCHAR(50)")]
     public string Description { get; set; }
 
-    [Column("Notes", TypeName = "NVARCHAR(255)")]
     public string? Notes { get; set; }
 
 }

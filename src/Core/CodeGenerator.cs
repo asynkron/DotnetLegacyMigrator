@@ -18,47 +18,72 @@ public static class CodeGenerator
         ["Byte"] = "byte"
     };
 
-    private static string NormalizeType(string type) =>
-        _primitiveAliases.TryGetValue(type.TrimEnd('?'), out var alias)
-            ? alias + (type.EndsWith("?") ? "?" : string.Empty)
-            : type;
+    private static readonly string[] _baseUsings =
+    {
+        "System.Collections.Generic"
+    };
+
+    private static string NormalizeType(string type, ISet<string> usings)
+    {
+        // handle nullable suffix
+        var isNullable = type.EndsWith("?");
+        if (isNullable)
+            type = type[..^1];
+
+        // handle System.Nullable<T> or Nullable<T>
+        if (type.StartsWith("System.Nullable<") || type.StartsWith("Nullable<"))
+        {
+            var inner = type.Substring(type.IndexOf('<') + 1);
+            inner = inner.TrimEnd('>');
+            return NormalizeType(inner, usings) + "?";
+        }
+
+        string? ns = null;
+        var lastDot = type.LastIndexOf('.');
+        if (lastDot > 0)
+        {
+            ns = type[..lastDot];
+            type = type[(lastDot + 1)..];
+            if (!string.Equals(ns, "System", StringComparison.Ordinal))
+                usings.Add(ns);
+        }
+
+        if (_primitiveAliases.TryGetValue(type, out var alias))
+            type = alias;
+
+        return type + (isNullable ? "?" : string.Empty);
+    }
 
     public static string GenerateEntities(IEnumerable<Entity> entities)
     {
         ResolveInverses(entities);
+        var extraUsings = new HashSet<string>();
+
+        // pre-scan property types to collect required namespaces
+        foreach (var prop in entities.SelectMany(e => e.Properties))
+            _ = NormalizeType(prop.Type, extraUsings);
+
         var sb = new StringBuilder();
-        sb.AppendLine("using System.ComponentModel.DataAnnotations;");
-        sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
-        sb.AppendLine("using System.Collections.Generic;");
+        foreach (var u in _baseUsings)
+            sb.AppendLine($"using {u};");
+        foreach (var u in extraUsings.OrderBy(u => u))
+            sb.AppendLine($"using {u};");
         sb.AppendLine();
+
         // Sort entities to produce deterministic output
         foreach (var entity in entities.OrderBy(e => e.Name))
         {
-            sb.AppendLine($"[Table(\"{entity.TableName}\")]");
             sb.AppendLine($"public class {entity.Name}");
             sb.AppendLine("{");
             // Preserve declaration order; input walkers already visit primary key first
             foreach (var prop in entity.Properties)
             {
-                if (prop.IsPrimaryKey)
-                    sb.AppendLine("    [Key]");
-                if (prop.IsDbGenerated)
-                    sb.AppendLine("    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]");
-                var columnName = string.IsNullOrWhiteSpace(prop.ColumnName) ? prop.Name : prop.ColumnName;
-                var columnArgs = new List<string> { $"\"{columnName}\"" };
-                if (!string.IsNullOrWhiteSpace(prop.DbType))
-                    columnArgs.Add($"TypeName = \"{prop.DbType}\"");
-                sb.AppendLine($"    [Column({string.Join(", ", columnArgs)})]");
-                sb.AppendLine($"    public {NormalizeType(prop.Type)} {prop.Name} {{ get; set; }}");
+                sb.AppendLine($"    public {NormalizeType(prop.Type, extraUsings)} {prop.Name} {{ get; set; }}");
                 sb.AppendLine();
             }
 
             foreach (var nav in entity.Navigations)
             {
-                if (!string.IsNullOrWhiteSpace(nav.Inverse))
-                    sb.AppendLine($"    [InverseProperty(nameof({nav.TargetEntity}.{nav.Inverse}))]");
-                if (!string.IsNullOrWhiteSpace(nav.ForeignKey))
-                    sb.AppendLine($"    [ForeignKey(\"{nav.ForeignKey}\")]");
                 var type = nav.IsCollection ? $"List<{nav.TargetEntity}>" : nav.TargetEntity;
                 var init = nav.IsCollection ? " = new();" : string.Empty;
                 sb.AppendLine($"    public {type} {nav.Name} {{ get; set; }}{init}");
@@ -68,6 +93,63 @@ public static class CodeGenerator
             sb.AppendLine();
         }
         return sb.ToString().Trim();
+    }
+
+    public static string GenerateEntityConfigurations(IEnumerable<Entity> entities)
+    {
+        var extraUsings = new HashSet<string>();
+        foreach (var prop in entities.SelectMany(e => e.Properties))
+        {
+            if (IsXmlType(prop.Type))
+                extraUsings.Add("System.Xml.Linq");
+        }
+
+        var sb = new StringBuilder();
+        sb.AppendLine("using Microsoft.EntityFrameworkCore;");
+        sb.AppendLine("using Microsoft.EntityFrameworkCore.Metadata.Builders;");
+        foreach (var u in extraUsings.OrderBy(u => u))
+            sb.AppendLine($"using {u};");
+        sb.AppendLine();
+
+        foreach (var entity in entities.OrderBy(e => e.Name))
+        {
+            sb.AppendLine($"public class {entity.Name}Configuration : IEntityTypeConfiguration<{entity.Name}>");
+            sb.AppendLine("{");
+            sb.AppendLine($"    public void Configure(EntityTypeBuilder<{entity.Name}> builder)");
+            sb.AppendLine("    {");
+            sb.AppendLine($"        builder.ToTable(\"{entity.TableName}\");");
+
+            var keys = entity.Properties.Where(p => p.IsPrimaryKey).ToList();
+            if (keys.Count == 1)
+                sb.AppendLine($"        builder.HasKey(e => e.{keys[0].Name});");
+            else if (keys.Count > 1)
+                sb.AppendLine($"        builder.HasKey(e => new {{ {string.Join(", ", keys.Select(k => $"e.{k.Name}"))} }});");
+
+            foreach (var prop in entity.Properties)
+            {
+                var columnName = string.IsNullOrWhiteSpace(prop.ColumnName) ? prop.Name : prop.ColumnName;
+                var calls = new List<string> {$".HasColumnName(\"{columnName}\")"};
+                if (!string.IsNullOrWhiteSpace(prop.DbType))
+                    calls.Add($".HasColumnType(\"{prop.DbType}\")");
+                if (prop.IsDbGenerated)
+                    calls.Add(".ValueGeneratedOnAdd()");
+                if (IsXmlType(prop.Type))
+                    calls.Add(".HasConversion(v => v.ToString(), v => XElement.Parse(v))");
+                sb.AppendLine($"        builder.Property(e => e.{prop.Name})");
+                sb.AppendLine($"            {string.Join("\n            ", calls)};");
+            }
+
+            sb.AppendLine("    }");
+            sb.AppendLine("}");
+            sb.AppendLine();
+        }
+        return sb.ToString().Trim();
+    }
+
+    private static bool IsXmlType(string type)
+    {
+        var t = type.TrimEnd('?');
+        return t == "System.Xml.Linq.XElement" || t == "XElement";
     }
 
     private static void ResolveInverses(IEnumerable<Entity> entities)
@@ -106,6 +188,12 @@ public static class CodeGenerator
         // Order tables by name so DbSet properties are emitted in a stable order
         foreach (var table in context.Tables.OrderBy(t => t.Name))
             sb.AppendLine($"    public DbSet<{table.EntityType}> {table.Name} {{ get; set; }}");
+        sb.AppendLine();
+        sb.AppendLine("    protected override void OnModelCreating(ModelBuilder modelBuilder)");
+        sb.AppendLine("    {");
+        foreach (var table in context.Tables.OrderBy(t => t.EntityType))
+            sb.AppendLine($"        modelBuilder.ApplyConfiguration(new {table.EntityType}Configuration());");
+        sb.AppendLine("    }");
         sb.AppendLine("}");
         return sb.ToString().Trim();
     }
