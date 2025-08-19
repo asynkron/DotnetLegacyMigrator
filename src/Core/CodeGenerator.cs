@@ -23,6 +23,20 @@ public static class CodeGenerator
         "System.Collections.Generic"
     };
 
+    /// <summary>
+    /// Normalizes a type name for generated code by resolving nullable wrappers and
+    /// suffixes, converting primitive aliases, and recording namespaces for fully
+    /// qualified names into the provided <paramref name="usings"/> collection.
+    /// </summary>
+    /// <remarks>
+    /// Trailing <c>?</c> markers or <c>System.Nullable&lt;T&gt;</c> wrappers are stripped and
+    /// re-applied after recursion. For fully qualified names, the namespace segment is
+    /// added to <paramref name="usings"/> (excluding <c>System</c>) so that generated
+    /// code can reference the short type name.
+    /// </remarks>
+    /// <param name="type">The type name to normalize.</param>
+    /// <param name="usings">A set that will be populated with required namespaces.</param>
+    /// <returns>The normalized type name suitable for code generation.</returns>
     private static string NormalizeType(string type, ISet<string> usings)
     {
         // handle nullable suffix
@@ -38,6 +52,7 @@ public static class CodeGenerator
             return NormalizeType(inner, usings) + "?";
         }
 
+        // track namespaces for fully qualified names
         string? ns = null;
         var lastDot = type.LastIndexOf('.');
         if (lastDot > 0)
@@ -54,6 +69,11 @@ public static class CodeGenerator
         return type + (isNullable ? "?" : string.Empty);
     }
 
+    /// <summary>
+    /// Generates C# entity classes from the provided metadata.
+    /// </summary>
+    /// <param name="entities">The entities to emit.</param>
+    /// <returns>The generated source code.</returns>
     public static string GenerateEntities(IEnumerable<Entity> entities)
     {
         ResolveInverses(entities);
@@ -95,6 +115,11 @@ public static class CodeGenerator
         return sb.ToString().Trim();
     }
 
+    /// <summary>
+    /// Generates EF Core entity configuration classes.
+    /// </summary>
+    /// <param name="entities">The entities whose configurations will be generated.</param>
+    /// <returns>The generated configuration source.</returns>
     public static string GenerateEntityConfigurations(IEnumerable<Entity> entities)
     {
         var extraUsings = new HashSet<string>();
@@ -128,7 +153,7 @@ public static class CodeGenerator
             foreach (var prop in entity.Properties)
             {
                 var columnName = string.IsNullOrWhiteSpace(prop.ColumnName) ? prop.Name : prop.ColumnName;
-                var calls = new List<string> {$".HasColumnName(\"{columnName}\")"};
+                var calls = new List<string> { $".HasColumnName(\"{columnName}\")" };
                 if (!string.IsNullOrWhiteSpace(prop.DbType))
                     calls.Add($".HasColumnType(\"{prop.DbType}\")");
                 if (prop.IsDbGenerated)
@@ -178,6 +203,11 @@ public static class CodeGenerator
             }
         }
     }
+    /// <summary>
+    /// Generates a <see cref="DbContext"/> implementation for the target data model.
+    /// </summary>
+    /// <param name="context">Metadata describing the data context.</param>
+    /// <returns>The generated context source code.</returns>
     public static string GenerateDataContext(DataContext context)
     {
         var sb = new StringBuilder();
