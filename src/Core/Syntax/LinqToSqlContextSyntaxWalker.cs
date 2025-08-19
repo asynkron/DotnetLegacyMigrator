@@ -1,9 +1,11 @@
 ﻿using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace LinqToSqlMetadataExtractor;
+using DotnetLegacyMigrator.Models;
 
-class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
+namespace DotnetLegacyMigrator.Syntax;
+
+public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
 {
     public List<DataContext> Contexts { get; } = new List<DataContext>();
 

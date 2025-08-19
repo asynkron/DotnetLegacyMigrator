@@ -1,14 +1,13 @@
-﻿using LinqToSqlMetadataExtractor;
+﻿using DotnetLegacyMigrator.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Data;
 using System.Xml;
-using static TypedDatasetMetadataExtractor.TypedDatasetEntitySyntaxWalker;
 
-namespace TypedDatasetMetadataExtractor;
+namespace DotnetLegacyMigrator.Syntax;
 
-class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
+public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
 {
     public List<Entity> Entities { get; } = new List<Entity>();
     public List<StoredProcedureResult> StoredProcedureResults { get; } = new List<StoredProcedureResult>();
