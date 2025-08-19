@@ -224,7 +224,8 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
         foreach (var member in datasetClass.Members.OfType<ClassDeclarationSyntax>())
         {
             if (member.BaseList != null &&
-                member.BaseList.Types.Any(t => t.Type.ToString().Contains("TypedTableBase")))
+                member.BaseList.Types.Any(t => t.Type.ToString().Contains("TypedTableBase") ||
+                                             t.Type.ToString().Contains("DataTable")))
             {
                 if (member.Identifier.ToString() == "DataTable1")
                     continue;

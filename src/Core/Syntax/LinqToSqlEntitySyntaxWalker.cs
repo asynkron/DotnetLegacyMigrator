@@ -14,7 +14,7 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
     {
         var tableAttribute = node.AttributeLists
             .SelectMany(al => al.Attributes)
-            .FirstOrDefault(a => a.Name.ToString().Contains("TableAttribute"));
+            .FirstOrDefault(a => a.Name.ToString().Contains("Table"));
 
         if (tableAttribute != null)
         {
@@ -144,7 +144,9 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
     {
         return p.AttributeLists
             .SelectMany(al => al.Attributes)
-            .Any(a => a.ToString().Contains("IsPrimaryKey=true"));
+            .Any(a => a.ArgumentList?.Arguments
+                .Any(arg => arg.NameEquals?.Name.Identifier.Text == "IsPrimaryKey" &&
+                             arg.Expression.ToString().Contains("true")) ?? false);
     }
 
     private static string GetMetadata(PropertyDeclarationSyntax p)
