@@ -1,6 +1,6 @@
 using DotnetLegacyMigrator.Rewriters;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Text;
 using Xunit;
 using System.IO;
 using System.Linq;
@@ -18,11 +18,10 @@ public class NewResolveRewriterTests
     private static string Normalize(string input) => input.Replace("\r\n", "\n").Trim();
 
     [Fact]
-    public void NewAndResolveRewriters_ProduceConstructorInjection()
+    public async Task NewAndResolveRewriters_ProduceConstructorInjection_WithoutModifyingDocument()
     {
         // Sample business code that mixes direct instantiation and a service locator
-        var code = @"
-public class OrderTasks
+        var code = @"public class OrderTasks
 {
     public void Run()
     {
@@ -33,17 +32,20 @@ public class OrderTasks
     }
 }";
 
-        var tree = CSharpSyntaxTree.ParseText(code);
-        var root = tree.GetRoot();
+        using var workspace = new AdhocWorkspace();
+        var project = workspace.AddProject("TestProject", LanguageNames.CSharp);
+        var document = workspace.AddDocument(project.Id, "OrderTasks.cs", SourceText.From(code));
 
-        // Replace "new" and service locator calls, then inject via ctor
-        root = new NewRewriter().Visit(root);
-        root = new ResolveRewriter().Visit(root);
-        root = new CtorInjectRewriter().Visit(root);
+        var original = await document.GetTextAsync();
 
-        var actual = Normalize(root.NormalizeWhitespace().ToFullString());
+        // Run the pipeline and capture the transformed output
+        var actual = Normalize(await RewriterPipeline.ApplyAsync(document));
         var expected = Normalize(File.ReadAllText(ExpectedPath("tests", "Translation.Tests", "Expected", "Rewriters", "OrderTasks.txt")));
 
         Assert.Equal(expected, actual);
+
+        // Ensure the document in the workspace was not modified
+        var after = await document.GetTextAsync();
+        Assert.Equal(original.ToString(), after.ToString());
     }
 }
