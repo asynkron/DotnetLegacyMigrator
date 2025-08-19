@@ -61,6 +61,7 @@ foreach (var p in solution.Projects)
         //newSyntaxRoot = new ResolveRewriter().Visit(newSyntaxRoot);
         //newSyntaxRoot = new CtorInjectRewriter().Visit(newSyntaxRoot);
 
+        
 
         var path = Path.GetDirectoryName(document.FilePath);
 
