@@ -119,7 +119,7 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
         return method.ParameterList.Parameters.Select(p => new ParameterMapping
         {
             Name = p.Identifier.ToString(),
-            Type = p.Type.ToString(),
+            Type = p.Type?.ToString() ?? string.Empty,
             IsNullable = p.Type is NullableTypeSyntax
         }).ToList();
     }

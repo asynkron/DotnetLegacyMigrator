@@ -50,13 +50,13 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
                     {
                         ReturnType = returnType,
 
-                        MethodName = m.MethodName + returnType,
-                        StoredProcName = m.CommandText,
-                        Parameters = m.Parameters.Select(p => new ParameterMapping()
+                        MethodName = (m.MethodName ?? string.Empty) + returnType,
+                        StoredProcName = m.CommandText ?? string.Empty,
+                        Parameters = m.Parameters?.Select(p => new ParameterMapping()
                         {
                             Name = p.Name,
                             Type = p.SqlDbType,
-                        }).ToList(),
+                        }).ToList() ?? new List<ParameterMapping>(),
 
                     };
 
@@ -190,7 +190,7 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
 
 
 
-    public MethodCommandInfo ExtractCommandInfoFromInitCommandCollection(ClassDeclarationSyntax tableAdapterNode, int parameterIndex)
+    public MethodCommandInfo? ExtractCommandInfoFromInitCommandCollection(ClassDeclarationSyntax tableAdapterNode, int parameterIndex)
     {
         var initCommandCollection = tableAdapterNode.Members
             .OfType<MethodDeclarationSyntax>()
@@ -211,7 +211,7 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
             .FirstOrDefault(ae => ae.Left.ToString().Contains($"_commandCollection[{parameterIndex}].CommandText"));
 
         // Extract CommandText
-        string commandText = null;
+        string? commandText = null;
         if (commandTextExpression?.Right is LiteralExpressionSyntax literalExpression)
         {
             commandText = literalExpression.Token.ValueText;
@@ -220,7 +220,7 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
         return new MethodCommandInfo
         {
             CommandText = commandText,
-            
+
         };
     }
 
@@ -250,17 +250,17 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
 
     public class MethodCommandInfo
     {
-        public string MethodName { get; set; }
+        public string? MethodName { get; set; }
         public int ParameterIndex { get; set; }
-        public string CommandText { get; set; }
-        public List<SqlParameterInfo> Parameters { get; set; }
+        public string? CommandText { get; set; }
+        public List<SqlParameterInfo>? Parameters { get; set; }
     }
 
     public class SqlParameterInfo
     {
-        public string Name { get; set; }
-        public string SqlDbType { get; set; }
+        public required string Name { get; set; }
+        public required string SqlDbType { get; set; }
         public int Size { get; set; }
-        public string Direction { get; set; }
+        public required string Direction { get; set; }
     }
 }

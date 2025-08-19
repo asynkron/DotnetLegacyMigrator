@@ -23,7 +23,7 @@ public class ResolveRewriter : CSharpSyntaxRewriter
         _logger = logger ?? NullLogger<ResolveRewriter>.Instance;
     }
 
-    public override SyntaxNode VisitInvocationExpression(InvocationExpressionSyntax node)
+    public override SyntaxNode? VisitInvocationExpression(InvocationExpressionSyntax node)
     {
         if (node.IsStaticMethodOrProperty())
         {
@@ -84,7 +84,7 @@ public class ResolveRewriter : CSharpSyntaxRewriter
         return SyntaxFactory.IdentifierName(_newTypesToFields[actualTypeName]);
     }
 
-    public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
+    public override SyntaxNode? VisitClassDeclaration(ClassDeclarationSyntax node)
     {
         // Capture current mappings so each class visit starts with a clean slate
         var previousMappings = _newTypesToFields;
@@ -116,7 +116,15 @@ public class ResolveRewriter : CSharpSyntaxRewriter
             }
 
             // Visit the children nodes to replace all the "new" expressions with identifiers
-            node = (ClassDeclarationSyntax)base.VisitClassDeclaration(node);
+            var visited = base.VisitClassDeclaration(node);
+            if (visited is ClassDeclarationSyntax classNode)
+            {
+                node = classNode;
+            }
+            else
+            {
+                return visited;
+            }
 
             // Collect existing field names in the class
             var existingFieldNames = node.Members

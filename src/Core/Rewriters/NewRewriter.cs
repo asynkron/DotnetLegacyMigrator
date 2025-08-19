@@ -23,7 +23,7 @@ public class NewRewriter : CSharpSyntaxRewriter
         _logger = logger ?? NullLogger<NewRewriter>.Instance;
     }
 
-    public override SyntaxNode VisitObjectCreationExpression(ObjectCreationExpressionSyntax node)
+    public override SyntaxNode? VisitObjectCreationExpression(ObjectCreationExpressionSyntax node)
     {
         if (node.IsStaticMethodOrProperty())
         {
@@ -48,7 +48,7 @@ public class NewRewriter : CSharpSyntaxRewriter
         return SyntaxFactory.IdentifierName(_newTypesToFields[typeName]);
     }
 
-    public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
+    public override SyntaxNode? VisitClassDeclaration(ClassDeclarationSyntax node)
     {
         // Capture current mappings so nested classes don't clobber outer state
         var previousMappings = _newTypesToFields;
@@ -72,7 +72,15 @@ public class NewRewriter : CSharpSyntaxRewriter
             List<FieldDeclarationSyntax> fieldDeclarations = new();
 
             // Visit the children nodes to replace all the "new" expressions with identifiers
-            node = (ClassDeclarationSyntax)base.VisitClassDeclaration(node);
+            var visited = base.VisitClassDeclaration(node);
+            if (visited is ClassDeclarationSyntax classNode)
+            {
+                node = classNode;
+            }
+            else
+            {
+                return visited;
+            }
 
             // Create a field for each type that's been new'ed up
             foreach (var entry in _newTypesToFields)

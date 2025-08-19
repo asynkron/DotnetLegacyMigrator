@@ -16,7 +16,7 @@ public class CtorInjectRewriter : CSharpSyntaxRewriter
         _logger = logger ?? NullLogger<CtorInjectRewriter>.Instance;
     }
 
-    public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
+    public override SyntaxNode? VisitClassDeclaration(ClassDeclarationSyntax node)
     {
         if (!node.ShouldProcess())
         {
@@ -30,7 +30,7 @@ public class CtorInjectRewriter : CSharpSyntaxRewriter
         if (fields.Any())
         {
             node = EnsureConstructorExists(node);
-            var constructor = node.Members.OfType<ConstructorDeclarationSyntax>().FirstOrDefault();
+            var constructor = node.Members.OfType<ConstructorDeclarationSyntax>().First();
             constructor = InjectMemberFields(constructor, fields);
             constructor = RemoveSelfAssignments(constructor);
 
@@ -62,11 +62,11 @@ public class CtorInjectRewriter : CSharpSyntaxRewriter
         return node;
     }
 
-    private static ConstructorDeclarationSyntax? RemoveSelfAssignments(ConstructorDeclarationSyntax constructor)
+    private static ConstructorDeclarationSyntax RemoveSelfAssignments(ConstructorDeclarationSyntax constructor)
     {
         // Process the constructor to remove self-assignments
         var statementsToRemove = new List<StatementSyntax>();
-        foreach (var statement in constructor.Body.Statements)
+        foreach (var statement in constructor.Body!.Statements)
         {
             if (statement is ExpressionStatementSyntax exprStatement &&
                 exprStatement.Expression is AssignmentExpressionSyntax assignment &&
@@ -82,7 +82,7 @@ public class CtorInjectRewriter : CSharpSyntaxRewriter
         // Remove self-assignment statements from the constructor
         foreach (var statement in statementsToRemove)
         {
-            constructor = constructor.RemoveNode(statement, SyntaxRemoveOptions.KeepNoTrivia);
+            constructor = constructor.RemoveNode(statement, SyntaxRemoveOptions.KeepNoTrivia)!;
         }
 
         return constructor;
@@ -129,7 +129,7 @@ public class CtorInjectRewriter : CSharpSyntaxRewriter
 
         // Add parameters to the constructor and statements to its body
         var parameterList = constructor.ParameterList.AddParameters(parameters.ToArray());
-        var body = constructor.Body.AddStatements(statements.ToArray());
+        var body = constructor.Body!.AddStatements(statements.ToArray());
 
         // Return the updated constructor
         return constructor.WithParameterList(parameterList).WithBody(body);
@@ -138,7 +138,7 @@ public class CtorInjectRewriter : CSharpSyntaxRewriter
     // Helper method to check if a field is initialized from a constructor parameter
     private bool IsFieldInitializedFromCtorParam(ConstructorDeclarationSyntax constructor, string fieldName)
     {
-        return constructor.Body.Statements
+        return constructor.Body!.Statements
             .OfType<ExpressionStatementSyntax>()
             .Select(stmt => stmt.Expression)
             .OfType<AssignmentExpressionSyntax>()
