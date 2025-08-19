@@ -17,7 +17,12 @@ public class MigrationRunner
     /// </summary>
     public async Task RunAsync(string solutionPath)
     {
-        MSBuildLocator.RegisterDefaults();
+        if (!MSBuildLocator.IsRegistered)
+        {
+            // Register MSBuild only once to avoid exceptions on subsequent invocations
+            MSBuildLocator.RegisterDefaults();
+        }
+
         var _ = typeof(Microsoft.CodeAnalysis.CSharp.Formatting.CSharpFormattingOptions);
 
         if (!File.Exists(solutionPath))
