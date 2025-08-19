@@ -1,11 +1,23 @@
 using DotnetLegacyMigrator;
 using Spectre.Console;
 
-var examplesDir = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "examples");
-var projects = Directory.GetDirectories(examplesDir)
-                        .Select(d => Path.GetFileName(d)!)
-                        .OrderBy(x => x)
-                        .ToList();
+// Resolve repository root from the compiled executable location.
+var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+
+// Examples were moved from `src/examples` to `/examples`.
+// Check both locations to remain compatible with older layouts.
+var examplesDir = Path.Combine(repoRoot, "examples");
+if (!Directory.Exists(examplesDir))
+{
+    examplesDir = Path.Combine(repoRoot, "src", "examples");
+}
+
+var projects = Directory.Exists(examplesDir)
+    ? Directory.GetDirectories(examplesDir)
+        .Select(d => Path.GetFileName(d)!)
+        .OrderBy(x => x)
+        .ToList()
+    : new List<string>();
 
 if (projects.Count == 0)
 {
