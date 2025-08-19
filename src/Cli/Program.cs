@@ -2,7 +2,10 @@ using DotnetLegacyMigrator;
 using Spectre.Console;
 
 // Resolve repository root from the compiled executable location.
-var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", ".."));
+// The CLI binaries are under `src/Cli/bin/<Configuration>/net9.0/`.
+// Moving five levels up reaches the repository root.
+var repoRoot = Path.GetFullPath(
+    Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
 
 // Examples were moved from `src/examples` to `/examples`.
 // Check both locations to remain compatible with older layouts.
