@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NHibernate mapping for the Order entity -->
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="NHibernateDemo" namespace="NHibernateDemo">
+  <class name="Order" table="Orders">
+    <id name="Id">
+      <generator class="native" />
+    </id>
+    <property name="CustomerId" type="Int32" not-null="true" />
+    <property name="Description" not-null="true" length="50" />
+    <property name="Notes" not-null="false" length="200" />
+  </class>
+</hibernate-mapping>

@@ -1,3 +1,4 @@
+using System;
 using System.Xml.Linq;
 using DotnetLegacyMigrator.Models;
 
@@ -33,14 +34,19 @@ public static class NHibernateHbmParser
                 {
                     var idName = idEl.Attribute("name")?.Value ?? "Id";
                     var type = idEl.Attribute("type")?.Value ?? "Int32";
+                    var length = idEl.Attribute("length")?.Value;
                     var gen = idEl.Element(Ns + "generator");
+                    var dbType = length != null && type.Equals("String", StringComparison.OrdinalIgnoreCase)
+                        ? $"NVARCHAR({length})"
+                        : null;
                     props.Add(new EntityProperty
                     {
                         Name = idName,
                         Type = type,
                         ColumnName = idName,
                         IsPrimaryKey = true,
-                        IsDbGenerated = gen != null
+                        IsDbGenerated = gen != null,
+                        DbType = dbType
                     });
                 }
 
@@ -48,11 +54,22 @@ public static class NHibernateHbmParser
                 {
                     var propName = p.Attribute("name")?.Value ?? "Prop";
                     var type = p.Attribute("type")?.Value ?? "String";
+                    var notNull = p.Attribute("not-null")?.Value == "true";
+                    var length = p.Attribute("length")?.Value;
+                    var normalizedType = !notNull && !type.Equals("String", StringComparison.OrdinalIgnoreCase)
+                        ? type + "?"
+                        : type;
+                    if (!notNull && type.Equals("String", StringComparison.OrdinalIgnoreCase))
+                        normalizedType = "String?";
+                    var dbType = length != null && type.Equals("String", StringComparison.OrdinalIgnoreCase)
+                        ? $"NVARCHAR({length})"
+                        : null;
                     props.Add(new EntityProperty
                     {
                         Name = propName,
-                        Type = type,
-                        ColumnName = propName
+                        Type = normalizedType,
+                        ColumnName = propName,
+                        DbType = dbType
                     });
                 }
 

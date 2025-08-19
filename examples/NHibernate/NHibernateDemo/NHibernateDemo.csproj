@@ -14,6 +14,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Customer.hbm.xml" />
+    <EmbeddedResource Include="Order.hbm.xml" />
     <None Include="hibernate.cfg.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

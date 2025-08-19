@@ -108,7 +108,7 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
                 IsPrimaryKey = dt.PrimaryKey.Any(cc => cc == c) || dt.Columns.Count == 1, // This information is typically unavailable in the code
                 IsDbGenerated = false, // Same as above
                 ColumnName = c.ColumnName,
-                DbType = null,
+                DbType = c.DataType == typeof(string) && c.MaxLength > 0 ? $"NVARCHAR({c.MaxLength})" : null,
                 Order = 0, // Order is irrelevant for columns in Typed Datasets
                 MaxLength = c.MaxLength != -1 ? c.MaxLength : null, // Max length not specified in this format
 
@@ -124,8 +124,8 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
 
     private static string GetColumnType(DataColumn c)
     {
-        //ignore nullability for strings until we upgrade C#
-        if (c.DataType == typeof(string)) return c.DataType.Name;
+        if (c.DataType == typeof(string))
+            return c.DataType.Name + (c.AllowDBNull ? "?" : string.Empty);
 
         if (c.DataType.IsValueType)
         {
