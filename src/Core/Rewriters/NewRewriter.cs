@@ -4,7 +4,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Linq;
 using CaseExtensions;
-using RoslynToy;
+using DotnetLegacyMigrator.Utilities;
+
+namespace DotnetLegacyMigrator.Rewriters;
 
 public class NewRewriter : CSharpSyntaxRewriter
 {

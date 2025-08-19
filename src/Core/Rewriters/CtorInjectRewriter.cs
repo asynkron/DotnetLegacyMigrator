@@ -1,7 +1,9 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using RoslynToy;
+using DotnetLegacyMigrator.Utilities;
+
+namespace DotnetLegacyMigrator.Rewriters;
 
 public class CtorInjectRewriter : CSharpSyntaxRewriter
 {

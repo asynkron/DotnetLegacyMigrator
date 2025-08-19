@@ -1,12 +1,11 @@
-﻿using LinqToSqlMetadataExtractor;
+﻿using DotnetLegacyMigrator.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static TypedDatasetMetadataExtractor.TypedDatasetEntitySyntaxWalker;
 
-namespace TypedDatasetMetadataExtractor;
+namespace DotnetLegacyMigrator.Syntax;
 
-class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
+public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
 {
     public List<DataContext> Contexts { get; } = new();
 

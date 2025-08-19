@@ -1,9 +1,11 @@
 ﻿using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace LinqToSqlMetadataExtractor;
+using DotnetLegacyMigrator.Models;
 
-class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
+namespace DotnetLegacyMigrator.Syntax;
+
+public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
 {
     public List<Entity> Entities { get; } = new List<Entity>();
     public List<StoredProcedureResult> StoredProcedureResults { get; } = new List<StoredProcedureResult>();

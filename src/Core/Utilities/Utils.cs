@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace RoslynToy
+namespace DotnetLegacyMigrator.Utilities
 {
     public static class Utils
     {

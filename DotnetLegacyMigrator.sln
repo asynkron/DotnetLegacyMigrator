@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{164A6B40-F494-4E85-80D4-82436900F924}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotnetLegacyMigrator.Core", "src\Core\DotnetLegacyMigrator.Core.csproj", "{5FAB3D92-B687-40DE-B868-6603FA3AA39D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotnetLegacyMigrator.Cli", "src\Cli\DotnetLegacyMigrator.Cli.csproj", "{D2FF8D4D-BEA3-49E3-8A19-F12849D6031A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5FAB3D92-B687-40DE-B868-6603FA3AA39D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5FAB3D92-B687-40DE-B868-6603FA3AA39D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5FAB3D92-B687-40DE-B868-6603FA3AA39D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5FAB3D92-B687-40DE-B868-6603FA3AA39D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2FF8D4D-BEA3-49E3-8A19-F12849D6031A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2FF8D4D-BEA3-49E3-8A19-F12849D6031A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2FF8D4D-BEA3-49E3-8A19-F12849D6031A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2FF8D4D-BEA3-49E3-8A19-F12849D6031A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5FAB3D92-B687-40DE-B868-6603FA3AA39D} = {164A6B40-F494-4E85-80D4-82436900F924}
+		{D2FF8D4D-BEA3-49E3-8A19-F12849D6031A} = {164A6B40-F494-4E85-80D4-82436900F924}
+	EndGlobalSection
+EndGlobal
