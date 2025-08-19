@@ -9,4 +9,8 @@
     <property name="Description" not-null="true" length="50" />
     <property name="Notes" not-null="false" length="200" />
   </class>
+  <sql-query name="GetOrdersByCustomer">
+    <return class="Order" />
+    exec GetOrdersByCustomer :customerId
+  </sql-query>
 </hibernate-mapping>

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 public class NorthwindDataSet : DbContext
 {
@@ -10,4 +11,7 @@ public class NorthwindDataSet : DbContext
         modelBuilder.ApplyConfiguration(new CustomersConfiguration());
         modelBuilder.ApplyConfiguration(new OrdersConfiguration());
     }
+
+    public IQueryable<Orders> GetOrdersByCustomerOrders(int customerId) =>
+        FromExpression(() => GetOrdersByCustomerOrders(customerId));
 }

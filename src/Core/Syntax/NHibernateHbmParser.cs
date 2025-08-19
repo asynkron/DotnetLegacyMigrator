@@ -17,6 +17,7 @@ public static class NHibernateHbmParser
     {
         var entities = new List<Entity>();
         var tables = new List<TableMapping>();
+        var sprocs = new List<StoredProcedureMapping>();
         string? assembly = null;
 
         foreach (var file in hbmFiles)
@@ -24,6 +25,8 @@ public static class NHibernateHbmParser
             var doc = XDocument.Load(file);
             var root = doc.Element(Ns + "hibernate-mapping");
             assembly ??= root?.Attribute("assembly")?.Value;
+
+            // Parse mapped entities
             foreach (var classEl in root?.Elements(Ns + "class") ?? Enumerable.Empty<XElement>())
             {
                 var name = classEl.Attribute("name")?.Value ?? "Entity";
@@ -116,6 +119,20 @@ public static class NHibernateHbmParser
 
                 tables.Add(new TableMapping { Name = table, EntityType = name, Navigations = navs });
             }
+
+            // Parse simple sql-query elements representing stored procedures
+            foreach (var sql in root?.Elements(Ns + "sql-query") ?? Enumerable.Empty<XElement>())
+            {
+                var name = sql.Attribute("name")?.Value ?? "Proc";
+                var returnType = sql.Element(Ns + "return")?.Attribute("class")?.Value ?? "int";
+                sprocs.Add(new StoredProcedureMapping
+                {
+                    MethodName = name,
+                    StoredProcName = name,
+                    ReturnType = returnType,
+                    Parameters = new List<ParameterMapping>()
+                });
+            }
         }
 
         var contextName = (assembly ?? "NHibernate") + "Context";
@@ -123,7 +140,7 @@ public static class NHibernateHbmParser
         {
             Name = contextName,
             Tables = tables,
-            StoredProcedures = new List<StoredProcedureMapping>()
+            StoredProcedures = sprocs
         };
 
         return (ctx, entities);
