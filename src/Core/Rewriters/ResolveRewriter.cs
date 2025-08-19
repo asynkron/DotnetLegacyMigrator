@@ -12,7 +12,9 @@ namespace DotnetLegacyMigrator.Rewriters;
 
 public class ResolveRewriter : CSharpSyntaxRewriter
 {
-    private readonly Dictionary<string, string> _newTypesToFields = new();
+    // Field mappings are scoped per class; the dictionary is swapped for each visit
+    // so nested classes don't interfere with outer mappings.
+    private Dictionary<string, string> _newTypesToFields = new();
     private readonly string _fieldPrefix = "_"; // You can change this based on your naming conventions
     private readonly ILogger<ResolveRewriter> _logger;
 
@@ -84,72 +86,84 @@ public class ResolveRewriter : CSharpSyntaxRewriter
 
     public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
     {
-        if (!node.ShouldProcess())
+        // Capture current mappings so each class visit starts with a clean slate
+        var previousMappings = _newTypesToFields;
+        _newTypesToFields = new Dictionary<string, string>();
+
+        try
         {
-            _logger.LogDebug("Skipping type {TypeName}", node.Identifier.Text);
+            if (!node.ShouldProcess())
+            {
+                _logger.LogDebug("Skipping type {TypeName}", node.Identifier.Text);
+                return node;
+            }
+
+            var fields = node.GetMemberFields();
+
+            // Mapping existing field types to their names
+            var existingFieldsMapping = fields
+                .ToDictionary(
+                    fds => fds.Declaration.Type.ToString(),
+                    fds => fds.Declaration.Variables.First().Identifier.Text
+                );
+
+            foreach (var pair in existingFieldsMapping)
+            {
+                if (!_newTypesToFields.ContainsKey(pair.Key))
+                {
+                    _newTypesToFields[pair.Key] = pair.Value;
+                }
+            }
+
+            // Visit the children nodes to replace all the "new" expressions with identifiers
+            node = (ClassDeclarationSyntax)base.VisitClassDeclaration(node);
+
+            // Collect existing field names in the class
+            var existingFieldNames = node.Members
+                .OfType<FieldDeclarationSyntax>()
+                .SelectMany(fds => fds.Declaration.Variables)
+                .Select(v => v.Identifier.Text)
+                .ToHashSet();
+
+            List<FieldDeclarationSyntax> fieldDeclarations = new();
+
+            // Create a field for each type that's been new'ed up
+            foreach (var entry in _newTypesToFields)
+            {
+                var newType = entry.Key;
+                var fieldName = entry.Value;
+
+                // If a field with the same name or same type already exists, skip it
+                if (existingFieldNames.Contains(fieldName))
+                {
+                    continue;
+                }
+
+                // Create a variable declaration with just a type and name
+                var variableDeclaration = SyntaxFactory.VariableDeclaration(SyntaxFactory.ParseTypeName(newType))
+                    .AddVariables(SyntaxFactory.VariableDeclarator(fieldName));
+
+                // Create a field declaration using the variable declaration
+                var fieldDeclaration = SyntaxFactory.FieldDeclaration(variableDeclaration)
+                    .AddModifiers(
+                        SyntaxFactory.Token(SyntaxKind.PrivateKeyword),// Adding the private modifier
+                        SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword));  // Adding the readonly modifier
+
+                fieldDeclarations.Add(fieldDeclaration);
+            }
+
+            // Insert the field declarations at the top of the class
+            if (fieldDeclarations.Any())
+            {
+                node = node.WithMembers(node.Members.InsertRange(0, fieldDeclarations));
+            }
+
             return node;
         }
-
-        var fields = node.GetMemberFields();
-
-        // Mapping existing field types to their names
-        var existingFieldsMapping = fields
-            .ToDictionary(
-                fds => fds.Declaration.Type.ToString(),
-                fds => fds.Declaration.Variables.First().Identifier.Text
-            );
-
-        foreach (var pair in existingFieldsMapping)
+        finally
         {
-            if (!_newTypesToFields.ContainsKey(pair.Key))
-            {
-                _newTypesToFields[pair.Key] = pair.Value;
-            }
+            // Restore mappings for outer class scope
+            _newTypesToFields = previousMappings;
         }
-
-        // Visit the children nodes to replace all the "new" expressions with identifiers
-        node = (ClassDeclarationSyntax)base.VisitClassDeclaration(node);
-
-        // Collect existing field names in the class
-        var existingFieldNames = node.Members
-            .OfType<FieldDeclarationSyntax>()
-            .SelectMany(fds => fds.Declaration.Variables)
-            .Select(v => v.Identifier.Text)
-            .ToHashSet();
-
-        List<FieldDeclarationSyntax> fieldDeclarations = new List<FieldDeclarationSyntax>();
-
-        // Create a field for each type that's been new'ed up
-        foreach (var entry in _newTypesToFields)
-        {
-            var newType = entry.Key;
-            var fieldName = entry.Value;
-
-            // If a field with the same name or same type already exists, skip it
-            if (existingFieldNames.Contains(fieldName))
-            {
-                continue;
-            }
-
-            // Create a variable declaration with just a type and name
-            var variableDeclaration = SyntaxFactory.VariableDeclaration(SyntaxFactory.ParseTypeName(newType))
-                .AddVariables(SyntaxFactory.VariableDeclarator(fieldName));
-
-            // Create a field declaration using the variable declaration
-            var fieldDeclaration = SyntaxFactory.FieldDeclaration(variableDeclaration)
-                .AddModifiers(
-                    SyntaxFactory.Token(SyntaxKind.PrivateKeyword),// Adding the private modifier
-                    SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword));  // Adding the readonly modifier
-
-            fieldDeclarations.Add(fieldDeclaration);
-        }
-
-        // Insert the field declarations at the top of the class
-        if (fieldDeclarations.Any())
-        {
-            node = node.WithMembers(node.Members.InsertRange(0, fieldDeclarations));
-        }
-
-        return node;
     }
 }

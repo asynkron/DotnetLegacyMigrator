@@ -12,7 +12,9 @@ namespace DotnetLegacyMigrator.Rewriters;
 
 public class NewRewriter : CSharpSyntaxRewriter
 {
-    private readonly Dictionary<string, string> _newTypesToFields = new();
+    // Tracks field names generated for each discovered type during a class visit.
+    // Reassigned for every class to keep mappings scoped and support nested classes.
+    private Dictionary<string, string> _newTypesToFields = new();
     private readonly string _fieldPrefix = "_"; // You can change this based on your naming conventions
     private readonly ILogger<NewRewriter> _logger;
 
@@ -48,55 +50,67 @@ public class NewRewriter : CSharpSyntaxRewriter
 
     public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
     {
-        if (!node.ShouldProcess())
+        // Capture current mappings so nested classes don't clobber outer state
+        var previousMappings = _newTypesToFields;
+        _newTypesToFields = new Dictionary<string, string>();
+
+        try
         {
-            _logger.LogDebug("Skipping type {TypeName}", node.Identifier.Text);
-            return node;
-        }
-
-        // Collect existing field names in the class
-        var existingFieldNames = node.Members
-            .OfType<FieldDeclarationSyntax>()
-            .SelectMany(fds => fds.Declaration.Variables)
-            .Select(v => v.Identifier.Text)
-            .ToHashSet();
-
-        List<FieldDeclarationSyntax> fieldDeclarations = new List<FieldDeclarationSyntax>();
-
-        // Visit the children nodes to replace all the "new" expressions with identifiers
-        node = (ClassDeclarationSyntax)base.VisitClassDeclaration(node);
-
-        // Create a field for each type that's been new'ed up
-        foreach (var entry in _newTypesToFields)
-        {
-            var newType = entry.Key;
-            var fieldName = entry.Value;
-
-            // If a field with the same name already exists, skip it
-            if (existingFieldNames.Contains(fieldName))
+            if (!node.ShouldProcess())
             {
-                continue;
+                _logger.LogDebug("Skipping type {TypeName}", node.Identifier.Text);
+                return node;
             }
 
-            // Create a variable declaration with just a type and name
-            var variableDeclaration = SyntaxFactory.VariableDeclaration(SyntaxFactory.ParseTypeName(newType))
-                .AddVariables(SyntaxFactory.VariableDeclarator(fieldName));
+            // Collect existing field names in the class
+            var existingFieldNames = node.Members
+                .OfType<FieldDeclarationSyntax>()
+                .SelectMany(fds => fds.Declaration.Variables)
+                .Select(v => v.Identifier.Text)
+                .ToHashSet();
 
-            // Create a field declaration using the variable declaration
-            var fieldDeclaration = SyntaxFactory.FieldDeclaration(variableDeclaration)
-                .AddModifiers(
-                    SyntaxFactory.Token(SyntaxKind.PrivateKeyword), // Adding the private modifier
-                    SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword)); // Adding the readonly modifier
+            List<FieldDeclarationSyntax> fieldDeclarations = new();
 
-            fieldDeclarations.Add(fieldDeclaration);
+            // Visit the children nodes to replace all the "new" expressions with identifiers
+            node = (ClassDeclarationSyntax)base.VisitClassDeclaration(node);
+
+            // Create a field for each type that's been new'ed up
+            foreach (var entry in _newTypesToFields)
+            {
+                var newType = entry.Key;
+                var fieldName = entry.Value;
+
+                // If a field with the same name already exists, skip it
+                if (existingFieldNames.Contains(fieldName))
+                {
+                    continue;
+                }
+
+                // Create a variable declaration with just a type and name
+                var variableDeclaration = SyntaxFactory.VariableDeclaration(SyntaxFactory.ParseTypeName(newType))
+                    .AddVariables(SyntaxFactory.VariableDeclarator(fieldName));
+
+                // Create a field declaration using the variable declaration
+                var fieldDeclaration = SyntaxFactory.FieldDeclaration(variableDeclaration)
+                    .AddModifiers(
+                        SyntaxFactory.Token(SyntaxKind.PrivateKeyword), // Adding the private modifier
+                        SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword)); // Adding the readonly modifier
+
+                fieldDeclarations.Add(fieldDeclaration);
+            }
+
+            // Insert the field declarations at the top of the class
+            if (fieldDeclarations.Any())
+            {
+                node = node.WithMembers(node.Members.InsertRange(0, fieldDeclarations));
+            }
+
+            return node;
         }
-
-        // Insert the field declarations at the top of the class
-        if (fieldDeclarations.Any())
+        finally
         {
-            node = node.WithMembers(node.Members.InsertRange(0, fieldDeclarations));
+            // Restore mappings so outer classes continue unaffected
+            _newTypesToFields = previousMappings;
         }
-
-        return node;
     }
 }
