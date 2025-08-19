@@ -5,7 +5,7 @@ namespace DotnetLegacyMigrator.Models;
 /// </summary>
 public class DataContext
 {
-    public string Name { get; set; }
-    public List<TableMapping> Tables { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public List<TableMapping> Tables { get; set; } = new();
     public List<StoredProcedureMapping> StoredProcedures { get; set; } = new();
 }

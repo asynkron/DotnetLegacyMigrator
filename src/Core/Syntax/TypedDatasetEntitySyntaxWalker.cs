@@ -104,20 +104,11 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
             {
                 Name = c.ColumnName,
                 Type = GetColumnType(c),
-                Metadata = string.Empty, // Metadata extraction not relevant for Typed Datasets
                 IsPrimaryKey = dt.PrimaryKey.Any(cc => cc == c) || dt.Columns.Count == 1, // This information is typically unavailable in the code
                 IsDbGenerated = false, // Same as above
                 ColumnName = c.ColumnName,
                 DbType = c.DataType == typeof(string) && c.MaxLength > 0 ? $"NVARCHAR({c.MaxLength})" : null,
-                Order = 0, // Order is irrelevant for columns in Typed Datasets
-                MaxLength = c.MaxLength != -1 ? c.MaxLength : null, // Max length not specified in this format
-
-                // Relationships are not typically encoded in Typed Dataset code
-                ForeignKey = null,
-                ForeignEntity = null,
-                ForeignMany = false,
-                SelfMany = false,
-                CascadeDelete = false
+                IsNullable = c.AllowDBNull
             };
         }
     }
@@ -133,25 +124,6 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
         }
 
         return c.DataType.Name;
-    }
-
-    private string? ExtractColumnName(ObjectCreationExpressionSyntax creation)
-    {
-        // First argument to DataColumn constructor is the column name
-        var columnNameArgument = creation.ArgumentList?.Arguments.FirstOrDefault();
-        return columnNameArgument?.Expression.ToString().Trim('"');
-    }
-
-    private string? ExtractColumnType(ObjectCreationExpressionSyntax creation)
-    {
-        // Second argument to DataColumn constructor is the type (typeof(...))
-        var typeArgument = creation.ArgumentList?.Arguments.ElementAtOrDefault(1)?.Expression;
-        if (typeArgument is TypeOfExpressionSyntax typeOfExpression)
-        {
-            return typeOfExpression.Type.ToString(); // Extract the actual type (e.g., "Guid", "string")
-        }
-
-        return null;
     }
 
 }

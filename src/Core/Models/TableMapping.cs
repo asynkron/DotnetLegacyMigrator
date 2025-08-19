@@ -5,6 +5,6 @@ namespace DotnetLegacyMigrator.Models;
 /// </summary>
 public class TableMapping
 {
-    public string Name { get; set; }
-    public string EntityType { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string EntityType { get; set; } = string.Empty;
 }
