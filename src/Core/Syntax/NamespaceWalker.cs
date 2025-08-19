@@ -6,9 +6,9 @@ namespace DotnetLegacyMigrator.Syntax;
 /// <summary>
 /// Finds the namespace declaration for a syntax tree.
 /// </summary>
-public class NamespaceWalker : CSharpSyntaxWalker
-{
-    public string Namespace { get; private set; }
+    public class NamespaceWalker : CSharpSyntaxWalker
+    {
+        public string Namespace { get; private set; } = string.Empty;
 
     public override void VisitNamespaceDeclaration(NamespaceDeclarationSyntax node)
     {
