@@ -25,9 +25,11 @@ public static class CodeGenerator
 
     public static string GenerateEntities(IEnumerable<Entity> entities)
     {
+        ResolveInverses(entities);
         var sb = new StringBuilder();
         sb.AppendLine("using System.ComponentModel.DataAnnotations;");
         sb.AppendLine("using System.ComponentModel.DataAnnotations.Schema;");
+        sb.AppendLine("using System.Collections.Generic;");
         sb.AppendLine();
         // Sort entities to produce deterministic output
         foreach (var entity in entities.OrderBy(e => e.Name))
@@ -50,12 +52,50 @@ public static class CodeGenerator
                 sb.AppendLine($"    public {NormalizeType(prop.Type)} {prop.Name} {{ get; set; }}");
                 sb.AppendLine();
             }
+
+            foreach (var nav in entity.Navigations)
+            {
+                if (!string.IsNullOrWhiteSpace(nav.Inverse))
+                    sb.AppendLine($"    [InverseProperty(nameof({nav.TargetEntity}.{nav.Inverse}))]");
+                if (!string.IsNullOrWhiteSpace(nav.ForeignKey))
+                    sb.AppendLine($"    [ForeignKey(\"{nav.ForeignKey}\")]");
+                var type = nav.IsCollection ? $"List<{nav.TargetEntity}>" : nav.TargetEntity;
+                var init = nav.IsCollection ? " = new();" : string.Empty;
+                sb.AppendLine($"    public {type} {nav.Name} {{ get; set; }}{init}");
+                sb.AppendLine();
+            }
             sb.AppendLine("}");
             sb.AppendLine();
         }
         return sb.ToString().Trim();
     }
 
+    private static void ResolveInverses(IEnumerable<Entity> entities)
+    {
+        var allNavs = entities.SelectMany(e => e.Navigations.Select(n => (Entity: e, Nav: n))).ToList();
+
+        foreach (var group in allNavs.Where(t => !string.IsNullOrWhiteSpace(t.Nav.AssociationName))
+                                      .GroupBy(t => t.Nav.AssociationName))
+        {
+            var pair = group.ToList();
+            if (pair.Count == 2)
+            {
+                pair[0].Nav.Inverse = pair[1].Nav.Name;
+                pair[1].Nav.Inverse = pair[0].Nav.Name;
+            }
+        }
+
+        foreach (var group in allNavs.Where(t => !string.IsNullOrWhiteSpace(t.Nav.JoinTable))
+                                      .GroupBy(t => t.Nav.JoinTable))
+        {
+            var pair = group.ToList();
+            if (pair.Count == 2)
+            {
+                pair[0].Nav.Inverse = pair[1].Nav.Name;
+                pair[1].Nav.Inverse = pair[0].Nav.Name;
+            }
+        }
+    }
     public static string GenerateDataContext(DataContext context)
     {
         var sb = new StringBuilder();
