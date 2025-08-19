@@ -1,11 +1,27 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Text.RegularExpressions;
 
 namespace DotnetLegacyMigrator.Utilities
 {
     public static class Utils
     {
+        // Patterns used to determine whether a class name should be processed
+        public static IEnumerable<Regex> AllowNamePatterns { get; set; } = new[]
+        {
+            new Regex("Tasks$", RegexOptions.Compiled),
+            new Regex("Facade$", RegexOptions.Compiled),
+            new Regex("Command$", RegexOptions.Compiled),
+            new Regex("Processor", RegexOptions.Compiled)
+        };
+
+        public static IEnumerable<Regex> DenyNamePatterns { get; set; } = new[]
+        {
+            new Regex("^Configure", RegexOptions.Compiled),
+            new Regex("Tests$", RegexOptions.Compiled)
+        };
+
         public static List<FieldDeclarationSyntax> GetMemberFields(this ClassDeclarationSyntax self)
         {
             var fields = self.Members
@@ -36,46 +52,45 @@ namespace DotnetLegacyMigrator.Utilities
             return self.GetMemberProperties().Any();
         }
 
+        /// <summary>
+        /// Determines whether a class should be processed by migration rewriters.
+        /// </summary>
+        /// <param name="node">The class declaration to evaluate.</param>
+        /// <returns><c>true</c> when the class meets the criteria for processing; otherwise, <c>false</c>.</returns>
+        /// <remarks>
+        /// Classes with static constructors, properties, or names matching <see cref="DenyNamePatterns"/> are skipped.
+        /// Inheritance from <c>IncomingCallHandler</c> or a name matching <see cref="AllowNamePatterns"/> allows processing.
+        /// </remarks>
         public static bool ShouldProcess(this ClassDeclarationSyntax node)
         {
-            if (node.Identifier.Text == "DmsTimeRegistrationTasks")
-            {
-
-            }
-            // Check for a static constructor in the class
+            // Skip processing when a static constructor is present
             var hasStaticConstructor = node.Members
                 .OfType<ConstructorDeclarationSyntax>()
                 .Any(constructor => constructor.Modifiers.Any(modifier => modifier.IsKind(SyntaxKind.StaticKeyword)));
 
             if (hasStaticConstructor)
             {
-                // Skip processing this class if a static constructor is found
                 return false;
             }
 
+            // Skip processing if the class has properties
             if (node.HasProperties())
             {
-                // Skip processing if the class has properties
+                return false;
+            }
+
+            var name = node.Identifier.Text;
+
+            // Deny patterns take precedence
+            if (DenyNamePatterns.Any(pattern => pattern.IsMatch(name)))
+            {
                 return false;
             }
 
             var isInheritedFromIncomingCallHandler = node.BaseList?.Types.Any(t => t.ToString() == "IncomingCallHandler") ?? false;
 
-            if (node.Identifier.Text.StartsWith("Configure"))
-            {
-                return false;
-            }
-
-            if (node.Identifier.Text.EndsWith("Tests"))
-            {
-                return false;
-            }
-
-            if (isInheritedFromIncomingCallHandler ||
-                node.Identifier.Text.EndsWith("Tasks") ||
-                node.Identifier.Text.EndsWith("Facade") ||
-                node.Identifier.Text.EndsWith("Command") ||
-                node.Identifier.Text.Contains("Processor"))
+            // Allow processing when inheritance or allow patterns match
+            if (isInheritedFromIncomingCallHandler || AllowNamePatterns.Any(pattern => pattern.IsMatch(name)))
             {
                 return true;
             }
