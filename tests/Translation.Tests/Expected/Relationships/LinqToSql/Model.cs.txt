@@ -1,0 +1,29 @@
+using System.Data.Linq;
+using System.Data.Linq.Mapping;
+
+[Table(Name="Customers")]
+public class Customer
+{
+    [Column(IsPrimaryKey=true)]
+    public int Id { get; set; }
+
+    private EntitySet<Order> _Orders = new();
+
+    [Association(Name="FK_Orders_Customers", ThisKey="Id", OtherKey="CustomerId")]
+    public EntitySet<Order> Orders { get { return _Orders; } }
+}
+
+[Table(Name="Orders")]
+public class Order
+{
+    [Column(IsPrimaryKey=true)]
+    public int Id { get; set; }
+
+    [Column]
+    public int CustomerId { get; set; }
+
+    private EntityRef<Customer> _Customer;
+
+    [Association(Name="FK_Orders_Customers", ThisKey="CustomerId", OtherKey="Id", IsForeignKey=true)]
+    public Customer Customer { get { return _Customer.Entity; } set { _Customer.Entity = value; } }
+}
