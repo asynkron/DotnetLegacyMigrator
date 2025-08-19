@@ -9,7 +9,29 @@ public class Customer
     [Column("Id")]
     public int Id { get; set; }
 
-    [Column("Name")]
+    [Column("Name", TypeName = "NVARCHAR(100)")]
     public string Name { get; set; }
+
+    [Column("Age")]
+    public int? Age { get; set; }
+
+}
+
+[Table("Orders")]
+public class Order
+{
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    [Column("Id")]
+    public int Id { get; set; }
+
+    [Column("CustomerId")]
+    public int CustomerId { get; set; }
+
+    [Column("Description", TypeName = "NVARCHAR(50)")]
+    public string Description { get; set; }
+
+    [Column("Notes", TypeName = "NVARCHAR(200)")]
+    public string? Notes { get; set; }
 
 }

@@ -5,6 +5,7 @@
     <id name="Id">
       <generator class="native" />
     </id>
-    <property name="Name" />
+    <property name="Name" not-null="true" length="100" />
+    <property name="Age" type="Int32" not-null="false" />
   </class>
 </hibernate-mapping>

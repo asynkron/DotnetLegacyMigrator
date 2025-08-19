@@ -9,6 +9,8 @@ public partial class NorthwindDataContext : DataContext
 {
     public Table<Customer> Customers;
 
+    public Table<Order> Orders;
+
     public NorthwindDataContext(string connection) : base(connection)
     {
     }

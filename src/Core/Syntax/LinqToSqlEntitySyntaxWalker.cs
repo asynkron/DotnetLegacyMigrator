@@ -115,11 +115,10 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
     {
         return p.AttributeLists
             .SelectMany(al => al.Attributes)
-            .Where(a => a.ToString().Contains("DbType="))
-            .Select(a => a.ArgumentList.Arguments
-                .FirstOrDefault(arg => arg.NameEquals.Name.Identifier.Text == "DbType")?.Expression
+            .Select(a => a.ArgumentList?.Arguments
+                .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.Text == "DbType")?.Expression
                 .ToString().Trim('"'))
-            .FirstOrDefault();
+            .FirstOrDefault(s => !string.IsNullOrEmpty(s));
     }
 
     private static string? GetColumnName(PropertyDeclarationSyntax p)
