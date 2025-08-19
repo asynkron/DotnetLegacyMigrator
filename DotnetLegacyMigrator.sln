@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotnetLegacyMigrator.Core",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotnetLegacyMigrator.Cli", "src\Cli\DotnetLegacyMigrator.Cli.csproj", "{D2FF8D4D-BEA3-49E3-8A19-F12849D6031A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{EF960348-F10A-4FE2-A272-0861F08757E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Translation.Tests", "tests\Translation.Tests\Translation.Tests.csproj", "{A20BD492-30F7-439A-B3F6-EE27064B6C47}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,9 +30,14 @@ Global
 		{D2FF8D4D-BEA3-49E3-8A19-F12849D6031A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D2FF8D4D-BEA3-49E3-8A19-F12849D6031A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D2FF8D4D-BEA3-49E3-8A19-F12849D6031A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A20BD492-30F7-439A-B3F6-EE27064B6C47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A20BD492-30F7-439A-B3F6-EE27064B6C47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A20BD492-30F7-439A-B3F6-EE27064B6C47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A20BD492-30F7-439A-B3F6-EE27064B6C47}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{5FAB3D92-B687-40DE-B868-6603FA3AA39D} = {164A6B40-F494-4E85-80D4-82436900F924}
 		{D2FF8D4D-BEA3-49E3-8A19-F12849D6031A} = {164A6B40-F494-4E85-80D4-82436900F924}
+		{A20BD492-30F7-439A-B3F6-EE27064B6C47} = {EF960348-F10A-4FE2-A272-0861F08757E6}
 	EndGlobalSection
 EndGlobal

@@ -23,7 +23,15 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
                     {
                         Name = p.Identifier.ToString(),
                         EntityType = GetEntityType(p)
-                    }).ToList(),
+                    })
+                    .Concat(node.Members.OfType<FieldDeclarationSyntax>()
+                        .Where(IsTableField)
+                        .Select(f => new TableMapping
+                        {
+                            Name = f.Declaration.Variables.First().Identifier.ToString(),
+                            EntityType = GetEntityType(f)
+                        }))
+                    .ToList(),
                 StoredProcedures = node.Members.OfType<MethodDeclarationSyntax>()
                     .Where(IsStoredProcedureMethod)
                     .Select(m => new StoredProcedureMapping
@@ -82,6 +90,44 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
     private string GetEntityType(PropertyDeclarationSyntax property)
     {
         var type = property.Type;
+        if (type is QualifiedNameSyntax qualifiedName)
+        {
+            if (qualifiedName.Right is GenericNameSyntax genericName)
+            {
+                return genericName.TypeArgumentList.Arguments[0].ToString();
+            }
+        }
+        else if (type is GenericNameSyntax genericName)
+        {
+            return genericName.TypeArgumentList.Arguments[0].ToString();
+        }
+        return null;
+    }
+
+    private bool IsTableField(FieldDeclarationSyntax field)
+    {
+        var type = field.Declaration.Type;
+        if (type is QualifiedNameSyntax qualifiedName)
+        {
+            if (qualifiedName.Right is GenericNameSyntax { Identifier.Text: "Table", TypeArgumentList.Arguments.Count: 1 })
+            {
+                return true;
+            }
+        }
+        else if (type is GenericNameSyntax genericName)
+        {
+            if (genericName.Identifier.Text == "Table" &&
+                genericName.TypeArgumentList.Arguments.Count == 1)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private string GetEntityType(FieldDeclarationSyntax field)
+    {
+        var type = field.Declaration.Type;
         if (type is QualifiedNameSyntax qualifiedName)
         {
             if (qualifiedName.Right is GenericNameSyntax genericName)
