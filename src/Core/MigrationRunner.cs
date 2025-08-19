@@ -1,8 +1,4 @@
 using DotnetLegacyMigrator.Models;
-using DotnetLegacyMigrator.Syntax;
-using Microsoft.Build.Locator;
-using Microsoft.CodeAnalysis.Formatting;
-using Microsoft.CodeAnalysis.MSBuild;
 using Spectre.Console;
 using System.Text.RegularExpressions;
 
@@ -15,58 +11,25 @@ namespace DotnetLegacyMigrator;
 public class MigrationRunner
 {
     /// <summary>
-    /// Loads the provided solution and runs the metadata walkers.
+    /// Loads the provided solution and collects metadata for all supported legacy models.
     /// </summary>
     public async Task RunAsync(string solutionPath)
     {
-        if (!MSBuildLocator.IsRegistered)
-        {
-            // Register MSBuild only once to avoid exceptions on subsequent invocations
-            MSBuildLocator.RegisterDefaults();
-        }
-
-        var _ = typeof(Microsoft.CodeAnalysis.CSharp.Formatting.CSharpFormattingOptions);
-
         if (!File.Exists(solutionPath))
         {
             Console.WriteLine($"Could not find the solution: {solutionPath}");
             return;
         }
 
-        using var workspace = MSBuildWorkspace.Create();
-        workspace.WorkspaceFailed += (_, e) => Console.WriteLine(e.Diagnostic.Message);
-
         Console.WriteLine($"Loading solution '{solutionPath}'");
-        var solution = await workspace.OpenSolutionAsync(solutionPath);
+        // MetadataCollector internally runs all known syntax walkers and parsers
+        var (allContexts, allEntities) = await MetadataCollector.CollectAsync(solutionPath);
 
-        var allEntities = new List<Entity>();
-        var allContexts = new List<DataContext>();
-
-        foreach (var project in solution.Projects)
+        // If nothing was discovered we should surface a helpful message
+        if (!allEntities.Any() && !allContexts.Any())
         {
-            foreach (var document in project.Documents)
-            {
-                var syntaxRoot = await document.GetSyntaxRootAsync();
-                if (syntaxRoot == null)
-                    continue;
-
-                var nsWalker = new NamespaceWalker();
-                var entitySyntaxWalker = new TypedDatasetEntitySyntaxWalker();
-                var contextSyntaxWalker = new TypedDatasetSyntaxWalker();
-
-                nsWalker.Visit(syntaxRoot);
-                entitySyntaxWalker.Visit(syntaxRoot);
-                contextSyntaxWalker.Visit(syntaxRoot);
-
-                if (entitySyntaxWalker.Entities.Any())
-                {
-                    Console.WriteLine($"{entitySyntaxWalker.Entities.Count} entities discovered in {document.Name}.");
-                    allEntities.AddRange(entitySyntaxWalker.Entities);
-                }
-
-                if (contextSyntaxWalker.Contexts.Any())
-                    allContexts.AddRange(contextSyntaxWalker.Contexts);
-            }
+            AnsiConsole.MarkupLine("[yellow]No supported legacy models were found in the solution.[/]");
+            return;
         }
 
         if (allEntities.Any())
