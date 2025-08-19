@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using CaseExtensions;
 using DotnetLegacyMigrator.Utilities;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DotnetLegacyMigrator.Rewriters;
 
@@ -12,6 +14,12 @@ public class NewRewriter : CSharpSyntaxRewriter
 {
     private readonly Dictionary<string, string> _newTypesToFields = new();
     private readonly string _fieldPrefix = "_"; // You can change this based on your naming conventions
+    private readonly ILogger<NewRewriter> _logger;
+
+    public NewRewriter(ILogger<NewRewriter>? logger = null)
+    {
+        _logger = logger ?? NullLogger<NewRewriter>.Instance;
+    }
 
     public override SyntaxNode VisitObjectCreationExpression(ObjectCreationExpressionSyntax node)
     {
@@ -42,7 +50,7 @@ public class NewRewriter : CSharpSyntaxRewriter
     {
         if (!node.ShouldProcess())
         {
-            Console.WriteLine("Skipping type " + node.Identifier.Text);
+            _logger.LogDebug("Skipping type {TypeName}", node.Identifier.Text);
             return node;
         }
 
