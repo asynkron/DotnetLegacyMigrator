@@ -1,0 +1,14 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+[Table("Customers")]
+public class Customers
+{
+    [Key]
+    [Column("CustomerID")]
+    public int CustomerID { get; set; }
+
+    [Column("CompanyName")]
+    public string CompanyName { get; set; }
+
+}

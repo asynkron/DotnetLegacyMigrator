@@ -1,0 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+
+public class NHibernateDemoContext : DbContext
+{
+    public DbSet<Customer> Customers { get; set; }
+}

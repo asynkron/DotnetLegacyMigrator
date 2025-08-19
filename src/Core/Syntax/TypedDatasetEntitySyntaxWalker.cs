@@ -15,7 +15,7 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
     {
 
         if (node.BaseList != null && node.BaseList.Types
-            .Any(t => t.Type.ToString().Contains("TypedTableBase")))
+            .Any(t => t.Type.ToString().Contains("TypedTableBase") || t.Type.ToString().Contains("DataTable")))
         {
             // get the .cs file path
             var csFile = node.SyntaxTree.FilePath;
@@ -35,7 +35,7 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
             ds.ReadXmlSchema(reader);
 
             var className = node.Identifier.ToString().Replace("DataTable", "");
-            var tableName = ExtractTableName(node);
+            var tableName = ExtractTableName(node) ?? className;
 
             var dt = ds.Tables[tableName];
             if (dt != null)
@@ -63,7 +63,7 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
         base.VisitClassDeclaration(node);
     }
 
-    private string ExtractTableName(ClassDeclarationSyntax classNode)
+    private string? ExtractTableName(ClassDeclarationSyntax classNode)
     {
         // look for the ctor whose name matches the class
         var ctor = classNode.Members
@@ -89,7 +89,7 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
         }
 
         // fallback to class name (or whatever default you prefer)
-        return classNode.Identifier.Text;
+        return null;
     }
 
 
