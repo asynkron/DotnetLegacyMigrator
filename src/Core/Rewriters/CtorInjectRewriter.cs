@@ -49,12 +49,15 @@ public class CtorInjectRewriter : CSharpSyntaxRewriter
             .WithModifiers(SyntaxFactory.TokenList(SyntaxFactory.Token(SyntaxKind.PublicKeyword)))
             .WithBody(SyntaxFactory.Block());
 
-        // Find the index of the last field declaration in the class
-        var lastFieldIndex = node.Members.OfType<FieldDeclarationSyntax>().Select((field, index) => index)
-            .LastOrDefault();
+        // Determine where to insert the constructor so it appears after the last field.
+        // Using LastOrDefault avoids exceptions when no fields exist.
+        var lastField = node.Members.OfType<FieldDeclarationSyntax>().LastOrDefault();
+        var insertIndex = lastField != null
+            ? node.Members.IndexOf(lastField) + 1
+            : 0; // If there are no fields, insert at the start of the member list
 
-        // Insert the constructor after the last field declaration
-        node = node.WithMembers(node.Members.Insert(lastFieldIndex + 1, constructor));
+        // Insert the constructor at the calculated index
+        node = node.WithMembers(node.Members.Insert(insertIndex, constructor));
 
         return node;
     }
