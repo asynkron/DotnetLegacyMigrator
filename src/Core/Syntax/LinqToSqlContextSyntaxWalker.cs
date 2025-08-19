@@ -17,20 +17,18 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
             var context = new DataContext
             {
                 Name = node.Identifier.ToString(),
-                Tables = node.Members.OfType<PropertyDeclarationSyntax>()
-                    .Where(IsTableProperty)
-                    .Select(p => new TableMapping
+                Tables = node.Members
+                    .Where(IsTableMember)
+                    .Select(m => new TableMapping
                     {
-                        Name = p.Identifier.ToString(),
-                        EntityType = GetEntityType(p)
-                    })
-                    .Concat(node.Members.OfType<FieldDeclarationSyntax>()
-                        .Where(IsTableField)
-                        .Select(f => new TableMapping
+                        Name = m switch
                         {
-                            Name = f.Declaration.Variables.First().Identifier.ToString(),
-                            EntityType = GetEntityType(f)
-                        }))
+                            PropertyDeclarationSyntax p => p.Identifier.ToString(),
+                            FieldDeclarationSyntax f => f.Declaration.Variables.First().Identifier.ToString(),
+                            _ => string.Empty
+                        },
+                        EntityType = GetEntityType(m)!
+                    })
                     .ToList(),
                 StoredProcedures = node.Members.OfType<MethodDeclarationSyntax>()
                     .Where(IsStoredProcedureMethod)
@@ -66,80 +64,42 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
         return m.Identifier.ToString();
     }
 
-    private bool IsTableProperty(PropertyDeclarationSyntax property)
+    private static bool IsTableMember(MemberDeclarationSyntax member) =>
+        TryGetTableEntityType(member, out _);
+
+    private static string? GetEntityType(MemberDeclarationSyntax member) =>
+        TryGetTableEntityType(member, out var entity) ? entity : null;
+
+    private static bool TryGetTableEntityType(MemberDeclarationSyntax member, out string? entityType)
     {
-        var type = property.Type;
-        if (type is QualifiedNameSyntax qualifiedName)
+        entityType = null;
+
+        TypeSyntax? type = member switch
         {
-            if (qualifiedName.Right is GenericNameSyntax { Identifier.Text: "Table", TypeArgumentList.Arguments.Count: 1 })
-            {
-                return true;
-            }
-        }
-        else if (type is GenericNameSyntax genericName)
+            PropertyDeclarationSyntax p => p.Type,
+            FieldDeclarationSyntax f => f.Declaration.Type,
+            _ => null
+        };
+
+        if (type is null)
         {
-            if (genericName.Identifier.Text == "Table" &&
-                genericName.TypeArgumentList.Arguments.Count == 1)
-            {
-                return true;
-            }
+            return false;
         }
+
+        GenericNameSyntax? generic = type switch
+        {
+            QualifiedNameSyntax { Right: GenericNameSyntax g } => g,
+            GenericNameSyntax g => g,
+            _ => null
+        };
+
+        if (generic is { Identifier.Text: "Table", TypeArgumentList.Arguments.Count: 1 })
+        {
+            entityType = generic.TypeArgumentList.Arguments[0].ToString();
+            return true;
+        }
+
         return false;
-    }
-
-    private string GetEntityType(PropertyDeclarationSyntax property)
-    {
-        var type = property.Type;
-        if (type is QualifiedNameSyntax qualifiedName)
-        {
-            if (qualifiedName.Right is GenericNameSyntax genericName)
-            {
-                return genericName.TypeArgumentList.Arguments[0].ToString();
-            }
-        }
-        else if (type is GenericNameSyntax genericName)
-        {
-            return genericName.TypeArgumentList.Arguments[0].ToString();
-        }
-        return null;
-    }
-
-    private bool IsTableField(FieldDeclarationSyntax field)
-    {
-        var type = field.Declaration.Type;
-        if (type is QualifiedNameSyntax qualifiedName)
-        {
-            if (qualifiedName.Right is GenericNameSyntax { Identifier.Text: "Table", TypeArgumentList.Arguments.Count: 1 })
-            {
-                return true;
-            }
-        }
-        else if (type is GenericNameSyntax genericName)
-        {
-            if (genericName.Identifier.Text == "Table" &&
-                genericName.TypeArgumentList.Arguments.Count == 1)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private string GetEntityType(FieldDeclarationSyntax field)
-    {
-        var type = field.Declaration.Type;
-        if (type is QualifiedNameSyntax qualifiedName)
-        {
-            if (qualifiedName.Right is GenericNameSyntax genericName)
-            {
-                return genericName.TypeArgumentList.Arguments[0].ToString();
-            }
-        }
-        else if (type is GenericNameSyntax genericName)
-        {
-            return genericName.TypeArgumentList.Arguments[0].ToString();
-        }
-        return null;
     }
 
     private bool IsStoredProcedureMethod(MethodDeclarationSyntax method)
