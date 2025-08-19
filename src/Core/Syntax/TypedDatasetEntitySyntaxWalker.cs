@@ -47,6 +47,29 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
                     Properties = ExtractEntityProperties(dt).ToList()
                 };
 
+                foreach (DataRelation rel in ds.Relations)
+                {
+                    if (rel.ParentTable == dt)
+                    {
+                        entity.Navigations.Add(new Navigation
+                        {
+                            Name = rel.ChildTable.TableName + "s",
+                            TargetEntity = rel.ChildTable.TableName,
+                            IsCollection = true
+                        });
+                    }
+                    if (rel.ChildTable == dt)
+                    {
+                        entity.Navigations.Add(new Navigation
+                        {
+                            Name = rel.ParentTable.TableName,
+                            TargetEntity = rel.ParentTable.TableName,
+                            ForeignKey = rel.ChildColumns.First().ColumnName,
+                            IsCollection = false
+                        });
+                    }
+                }
+
                 if (entity.Properties.Count > 0)
                 {
                     //hack, make sure all tables has at least one key

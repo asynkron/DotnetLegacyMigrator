@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Xml.Linq;
 using DotnetLegacyMigrator.Models;
 
@@ -28,6 +29,7 @@ public static class NHibernateHbmParser
                 var name = classEl.Attribute("name")?.Value ?? "Entity";
                 var table = classEl.Attribute("table")?.Value ?? name;
                 var props = new List<EntityProperty>();
+                var navs = new List<Navigation>();
 
                 var idEl = classEl.Element(Ns + "id");
                 if (idEl != null)
@@ -73,14 +75,46 @@ public static class NHibernateHbmParser
                     });
                 }
 
+                foreach (var m2o in classEl.Elements(Ns + "many-to-one"))
+                {
+                    var navName = m2o.Attribute("name")?.Value ?? "Nav";
+                    var target = m2o.Attribute("class")?.Value ?? "";
+                    var column = m2o.Attribute("column")?.Value;
+                    navs.Add(new Navigation
+                    {
+                        Name = navName,
+                        TargetEntity = target,
+                        ForeignKey = column
+                    });
+                }
+
+                foreach (var set in classEl.Elements(Ns + "set").Concat(classEl.Elements(Ns + "bag")))
+                {
+                    var navName = set.Attribute("name")?.Value ?? "Nav";
+                    var tableAttr = set.Attribute("table")?.Value;
+                    var oneToMany = set.Element(Ns + "one-to-many");
+                    var manyToMany = set.Element(Ns + "many-to-many");
+                    var target = oneToMany?.Attribute("class")?.Value ?? manyToMany?.Attribute("class")?.Value ?? "";
+                    var keyColumn = set.Element(Ns + "key")?.Attribute("column")?.Value;
+                    navs.Add(new Navigation
+                    {
+                        Name = navName,
+                        TargetEntity = target,
+                        IsCollection = true,
+                        ForeignKey = keyColumn,
+                        JoinTable = tableAttr
+                    });
+                }
+
                 entities.Add(new Entity
                 {
                     Name = name,
                     TableName = table,
-                    Properties = props
+                    Properties = props,
+                    Navigations = navs
                 });
 
-                tables.Add(new TableMapping { Name = table, EntityType = name });
+                tables.Add(new TableMapping { Name = table, EntityType = name, Navigations = navs });
             }
         }
 

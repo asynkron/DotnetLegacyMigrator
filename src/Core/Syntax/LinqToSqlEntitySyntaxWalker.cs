@@ -22,13 +22,22 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
                 .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.Text == "Name")?
                 .Expression?.ToString().Trim('"');
 
+            var properties = new List<EntityProperty>();
+            var navigations = new List<Navigation>();
+            foreach (var prop in node.Members.OfType<PropertyDeclarationSyntax>())
+            {
+                if (TryGetNavigation(prop, out var nav))
+                    navigations.Add(nav);
+                else
+                    properties.Add(GetEntityProperty(prop));
+            }
 
             var entity = new Entity
             {
                 Name = node.Identifier.ToString(),
                 TableName = tableName ?? node.Identifier.ToString(),
-                Properties = node.Members.OfType<PropertyDeclarationSyntax>()
-                    .Select(GetEntityProperty).ToList()
+                Properties = properties,
+                Navigations = navigations
             };
             Entities.Add(entity);
         }
@@ -130,5 +139,40 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
         return node.Identifier.ToString().EndsWith("Result") && !node.AttributeLists
             .SelectMany(al => al.Attributes)
             .Any(a => a.Name.ToString().Contains("TableAttribute"));
+    }
+
+    private bool TryGetNavigation(PropertyDeclarationSyntax p, out Navigation nav)
+    {
+        nav = default!;
+        var assoc = p.AttributeLists
+            .SelectMany(al => al.Attributes)
+            .FirstOrDefault(a => a.Name.ToString().Contains("Association"));
+        if (assoc == null)
+            return false;
+
+        var typeName = p.Type.ToString();
+        bool isCollection = typeName.StartsWith("EntitySet<");
+        string target = isCollection
+            ? typeName.Substring("EntitySet<".Length).TrimEnd('>')
+            : typeName.StartsWith("EntityRef<")
+                ? typeName.Substring("EntityRef<".Length).TrimEnd('>')
+                : typeName;
+
+        var fk = assoc.ArgumentList?.Arguments
+            .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.Text == "ThisKey")?
+            .Expression?.ToString().Trim('"');
+        var name = assoc.ArgumentList?.Arguments
+            .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.Text == "Name")?
+            .Expression?.ToString().Trim('"');
+
+        nav = new Navigation
+        {
+            Name = p.Identifier.ToString(),
+            TargetEntity = target,
+            IsCollection = isCollection,
+            ForeignKey = fk,
+            AssociationName = name
+        };
+        return true;
     }
 }
