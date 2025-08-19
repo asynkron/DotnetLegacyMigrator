@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- NHibernate mapping for the Customer entity -->
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="NHibernateDemo" namespace="NHibernateDemo">
+  <class name="Customer" table="Customers">
+    <id name="Id">
+      <generator class="native" />
+    </id>
+    <property name="Name" />
+  </class>
+</hibernate-mapping>
