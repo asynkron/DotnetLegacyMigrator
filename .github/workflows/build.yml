@@ -1,10 +1,14 @@
 name: Build
 
 on:
+  # Trigger when changes are pushed directly to the main branch.
   push:
-    branches: [ main ]
+    branches:
+      - main
+  # Trigger for pull requests targeting the main branch.
   pull_request:
-    branches: [ main ]
+    branches:
+      - main
 
 env:
   DOTNET_SYSTEM_CONSOLE_ALLOW_ANSI_COLOR_REDIRECTION: 1
