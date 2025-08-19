@@ -2,16 +2,25 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using DotnetLegacyMigrator.Utilities;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DotnetLegacyMigrator.Rewriters;
 
 public class CtorInjectRewriter : CSharpSyntaxRewriter
 {
+    private readonly ILogger<CtorInjectRewriter> _logger;
+
+    public CtorInjectRewriter(ILogger<CtorInjectRewriter>? logger = null)
+    {
+        _logger = logger ?? NullLogger<CtorInjectRewriter>.Instance;
+    }
+
     public override SyntaxNode VisitClassDeclaration(ClassDeclarationSyntax node)
     {
         if (!node.ShouldProcess())
         {
-            Console.WriteLine("Skipping type " + node.Identifier.Text);
+            _logger.LogDebug("Skipping type {TypeName}", node.Identifier.Text);
             return node;
         }
 

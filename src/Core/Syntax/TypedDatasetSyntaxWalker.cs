@@ -2,13 +2,21 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace DotnetLegacyMigrator.Syntax;
 
 public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
 {
-    public List<DataContext> Contexts { get; } = new();
+    private readonly ILogger<TypedDatasetSyntaxWalker> _logger;
 
+    public TypedDatasetSyntaxWalker(ILogger<TypedDatasetSyntaxWalker>? logger = null)
+    {
+        _logger = logger ?? NullLogger<TypedDatasetSyntaxWalker>.Instance;
+    }
+
+    public List<DataContext> Contexts { get; } = new();
 
     public override void VisitClassDeclaration(ClassDeclarationSyntax node)
     {
@@ -127,14 +135,14 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
         var commandInfoList = new List<MethodCommandInfo>();
 
         // Print the name of the table adapter class (for debugging)
-        Console.WriteLine($"Processing TableAdapter: {tableAdapterNode.Identifier}");
+        _logger.LogDebug("Processing TableAdapter: {Adapter}", tableAdapterNode.Identifier);
 
         // Extract methods with DataObjectMethodAttribute
         var methodsWithAttribute = GetTableAdapterMethodsWithDataObjectMethod(tableAdapterNode);
 
         foreach (var method in methodsWithAttribute)
         {
-            Console.WriteLine($"Processing Method: {method.Identifier}");
+            _logger.LogDebug("Processing Method: {Method}", method.Identifier);
 
             // Parse the body of the method to find the CommandCollection index
             var commandCollectionAccess = method.DescendantNodes()
@@ -158,7 +166,7 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
             if (commandCollectionAccess?.ArgumentList.Arguments.FirstOrDefault()?.Expression is LiteralExpressionSyntax commandIndexLiteral &&
                 int.TryParse(commandIndexLiteral.Token.ValueText, out var commandIndex))
             {
-                Console.WriteLine($"Found CommandCollection index: {commandIndex}");
+                _logger.LogDebug("Found CommandCollection index: {Index}", commandIndex);
 
                 // Extract command info using the index
                 var commandInfo = ExtractCommandInfoFromInitCommandCollection(tableAdapterNode, commandIndex);
@@ -172,7 +180,7 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
             }
             else
             {
-                Console.WriteLine("No CommandCollection index found for this method.");
+                _logger.LogDebug("No CommandCollection index found for this method.");
             }
         }
 
