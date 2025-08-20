@@ -11,7 +11,7 @@ namespace DotnetLegacyMigrator;
 /// </summary>
 public static class MetadataCollector
 {
-    public static async Task<(List<DataContext> Contexts, List<Entity> Entities)> CollectAsync(string solutionPath)
+    public static async Task<(List<DataContext> Contexts, List<Entity> Entities, List<StoredProcedureResult> StoredProcedureResults)> CollectAsync(string solutionPath)
     {
         if (!MSBuildLocator.IsRegistered)
         {
@@ -24,6 +24,7 @@ public static class MetadataCollector
 
         var contexts = new List<DataContext>();
         var entities = new List<Entity>();
+        var results = new List<StoredProcedureResult>();
 
         foreach (var project in solution.Projects)
         {
@@ -46,6 +47,8 @@ public static class MetadataCollector
                 contexts.AddRange(datasetCtx.Contexts);
                 entities.AddRange(linqEntities.Entities);
                 entities.AddRange(datasetEntities.Entities);
+                results.AddRange(linqEntities.StoredProcedureResults);
+                results.AddRange(datasetEntities.StoredProcedureResults);
             }
 
             // NHibernate mapping files live outside of C# documents
@@ -62,6 +65,6 @@ public static class MetadataCollector
             }
         }
 
-        return (contexts, entities);
+        return (contexts, entities, results);
     }
 }

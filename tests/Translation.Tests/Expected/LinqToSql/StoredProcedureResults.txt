@@ -1,0 +1,10 @@
+using System.Collections.Generic;
+
+public class OrderSummaryResult
+{
+    public int OrderID { get; set; }
+
+    public decimal Total { get; set; }
+
+}
+

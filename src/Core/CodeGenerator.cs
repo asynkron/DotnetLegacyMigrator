@@ -171,6 +171,44 @@ public static class CodeGenerator
         return sb.ToString().Trim();
     }
 
+    /// <summary>
+    /// Generates classes representing stored procedure result shapes.
+    /// </summary>
+    /// <param name="results">The stored procedure result metadata.</param>
+    /// <returns>The generated source code.</returns>
+    public static string GenerateStoredProcedureResults(IEnumerable<StoredProcedureResult> results)
+    {
+        var resultList = results.ToList();
+        if (resultList.Count == 0)
+            return string.Empty;
+
+        var extraUsings = new HashSet<string>();
+        foreach (var prop in resultList.SelectMany(r => r.Properties))
+            _ = NormalizeType(prop.Type, extraUsings);
+
+        var sb = new StringBuilder();
+        foreach (var u in _baseUsings)
+            sb.AppendLine($"using {u};");
+        foreach (var u in extraUsings.OrderBy(u => u))
+            sb.AppendLine($"using {u};");
+        sb.AppendLine();
+
+        foreach (var result in resultList.OrderBy(r => r.Name))
+        {
+            sb.AppendLine($"public class {result.Name}");
+            sb.AppendLine("{");
+            foreach (var prop in result.Properties)
+            {
+                sb.AppendLine($"    public {NormalizeType(prop.Type, extraUsings)} {prop.Name} {{ get; set; }}");
+                sb.AppendLine();
+            }
+            sb.AppendLine("}");
+            sb.AppendLine();
+        }
+
+        return sb.ToString().Trim();
+    }
+
     private static bool IsXmlType(string type)
     {
         var t = type.TrimEnd('?');
