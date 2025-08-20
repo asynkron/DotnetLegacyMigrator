@@ -158,8 +158,8 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
                 {
                     Name = p.Identifier.ToString(),
                     SqlDbType = p.Type?.ToString() ?? "Unknown",
-                    Direction = p.Modifiers.Any(m => m.Kind() == SyntaxKind.OutKeyword) ? "Output" :
-                                p.Modifiers.Any(m => m.Kind() == SyntaxKind.RefKeyword) ? "InputOutput" : "Input"
+                    Direction = p.Modifiers.Any(m => m.IsKind(SyntaxKind.OutKeyword)) ? "Output" :
+                                p.Modifiers.Any(m => m.IsKind(SyntaxKind.RefKeyword)) ? "InputOutput" : "Input"
                 }).ToList();
 
             var methodName = method.Identifier.ToString();
