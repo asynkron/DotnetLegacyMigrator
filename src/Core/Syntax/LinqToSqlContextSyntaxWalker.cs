@@ -1,3 +1,4 @@
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Text.RegularExpressions;
@@ -120,9 +121,9 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
         return method.ParameterList.Parameters.Select(p =>
         {
             var direction = "Input";
-            if (p.Modifiers.Any(m => m.Kind() == SyntaxKind.OutKeyword))
+            if (p.Modifiers.Any(m => m.IsKind(SyntaxKind.OutKeyword)))
                 direction = "Output";
-            else if (p.Modifiers.Any(m => m.Kind() == SyntaxKind.RefKeyword))
+            else if (p.Modifiers.Any(m => m.IsKind(SyntaxKind.RefKeyword)))
                 direction = "InputOutput";
 
             int? size = null;
