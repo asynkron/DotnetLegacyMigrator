@@ -16,6 +16,7 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
             .SelectMany(al => al.Attributes)
             .FirstOrDefault(a => a.Name.ToString().Contains("Table"));
 
+        var baseTypeName = node.BaseList?.Types.FirstOrDefault()?.Type.ToString();
         if (tableAttribute != null)
         {
             var tableName = tableAttribute.ArgumentList?.Arguments
@@ -38,8 +39,33 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
             var entity = new Entity
             {
                 Name = node.Identifier.ToString(),
+                BaseType = Entities.Any(e => e.Name == baseTypeName) ? baseTypeName : null,
                 TableName = tableName ?? node.Identifier.ToString(),
                 Schema = schemaName,
+                Properties = properties,
+                Navigations = navigations
+            };
+            Entities.Add(entity);
+        }
+        else if (baseTypeName != null && Entities.Any(e => e.Name == baseTypeName))
+        {
+            var baseEntity = Entities.First(e => e.Name == baseTypeName);
+            var properties = new List<EntityProperty>();
+            var navigations = new List<Navigation>();
+            foreach (var prop in node.Members.OfType<PropertyDeclarationSyntax>())
+            {
+                if (TryGetNavigation(prop, out var nav))
+                    navigations.Add(nav);
+                else
+                    properties.Add(GetEntityProperty(prop));
+            }
+
+            var entity = new Entity
+            {
+                Name = node.Identifier.ToString(),
+                BaseType = baseTypeName,
+                TableName = baseEntity.TableName,
+                Schema = baseEntity.Schema,
                 Properties = properties,
                 Navigations = navigations
             };

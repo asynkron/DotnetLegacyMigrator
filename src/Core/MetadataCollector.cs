@@ -28,28 +28,28 @@ public static class MetadataCollector
 
         foreach (var project in solution.Projects)
         {
+            var linqCtx = new LinqToSqlContextSyntaxWalker();
+            var linqEntities = new LinqToSqlEntitySyntaxWalker();
+            var datasetCtx = new TypedDatasetSyntaxWalker();
+            var datasetEntities = new TypedDatasetEntitySyntaxWalker();
+
             foreach (var document in project.Documents)
             {
                 var root = await document.GetSyntaxRootAsync();
                 if (root == null) continue;
 
-                var linqCtx = new LinqToSqlContextSyntaxWalker();
-                var linqEntities = new LinqToSqlEntitySyntaxWalker();
-                var datasetCtx = new TypedDatasetSyntaxWalker();
-                var datasetEntities = new TypedDatasetEntitySyntaxWalker();
-
                 linqCtx.Visit(root);
                 linqEntities.Visit(root);
                 datasetCtx.Visit(root);
                 datasetEntities.Visit(root);
-
-                contexts.AddRange(linqCtx.Contexts);
-                contexts.AddRange(datasetCtx.Contexts);
-                entities.AddRange(linqEntities.Entities);
-                entities.AddRange(datasetEntities.Entities);
-                results.AddRange(linqEntities.StoredProcedureResults);
-                results.AddRange(datasetEntities.StoredProcedureResults);
             }
+
+            contexts.AddRange(linqCtx.Contexts);
+            contexts.AddRange(datasetCtx.Contexts);
+            entities.AddRange(linqEntities.Entities);
+            entities.AddRange(datasetEntities.Entities);
+            results.AddRange(linqEntities.StoredProcedureResults);
+            results.AddRange(datasetEntities.StoredProcedureResults);
 
             // NHibernate mapping files live outside of C# documents
             var projectDir = Path.GetDirectoryName(project.FilePath);

@@ -93,7 +93,10 @@ public static class CodeGenerator
         // Sort entities to produce deterministic output
         foreach (var entity in entities.OrderBy(e => e.Name))
         {
-            sb.AppendLine($"public class {entity.Name}");
+            var baseClause = string.IsNullOrWhiteSpace(entity.BaseType)
+                ? string.Empty
+                : $" : {entity.BaseType}";
+            sb.AppendLine($"public class {entity.Name}{baseClause}");
             sb.AppendLine("{");
             // Preserve declaration order; input walkers already visit primary key first
             foreach (var prop in entity.Properties)
@@ -145,6 +148,8 @@ public static class CodeGenerator
             sb.AppendLine("{");
             sb.AppendLine($"    public void Configure(EntityTypeBuilder<{entity.Name}> builder)");
             sb.AppendLine("    {");
+            if (!string.IsNullOrWhiteSpace(entity.BaseType))
+                sb.AppendLine($"        builder.HasBaseType<{entity.BaseType}>();");
             var toTable = string.IsNullOrWhiteSpace(entity.Schema)
                 ? $"builder.ToTable(\"{entity.TableName}\");"
                 : $"builder.ToTable(\"{entity.TableName}\", \"{entity.Schema}\");";
