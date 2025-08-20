@@ -160,6 +160,8 @@ public static class CodeGenerator
                     calls.Add(".ValueGeneratedOnAdd()");
                 if (IsXmlType(prop.Type))
                     calls.Add(".HasConversion(v => v.ToString(), v => XElement.Parse(v))");
+                // Mark whether the property is required based on nullability
+                calls.Add(prop.IsNullable ? ".IsRequired(false)" : ".IsRequired()");
                 sb.AppendLine($"        builder.Property(e => e.{prop.Name})");
                 sb.AppendLine($"            {string.Join("\n            ", calls)};");
             }

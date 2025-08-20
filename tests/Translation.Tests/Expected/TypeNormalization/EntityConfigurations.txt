@@ -9,10 +9,12 @@ public class DocConfiguration : IEntityTypeConfiguration<Doc>
         builder.ToTable("Docs");
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id)
-            .HasColumnName("Id");
+            .HasColumnName("Id")
+            .IsRequired();
         builder.Property(e => e.Content)
             .HasColumnName("Content")
             .HasColumnType("XML")
-            .HasConversion(v => v.ToString(), v => XElement.Parse(v));
+            .HasConversion(v => v.ToString(), v => XElement.Parse(v))
+            .IsRequired(false);
     }
 }

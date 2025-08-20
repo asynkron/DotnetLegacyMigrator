@@ -20,7 +20,8 @@ public class TypeNormalizationTests
                     Name = "Id",
                     Type = "System.Int32",
                     IsPrimaryKey = true,
-                    ColumnName = "Id"
+                    ColumnName = "Id",
+                    IsNullable = false
                 },
                 new()
                 {
@@ -28,6 +29,7 @@ public class TypeNormalizationTests
                     Type = "System.Xml.Linq.XElement?",
                     ColumnName = "Content",
                     DbType = "XML",
+                    IsNullable = true
                 }
             }
         };
