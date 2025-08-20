@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Data;
 using System.Xml;
+using System.IO;
 
 namespace DotnetLegacyMigrator.Syntax;
 
@@ -16,23 +17,14 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
 
         if (node.BaseList != null && node.BaseList.Types
             .Any(t => t.Type.ToString().Contains("TypedTableBase") || t.Type.ToString().Contains("DataTable")))
+
         {
-            // get the .cs file path
-            var csFile = node.SyntaxTree.FilePath;
-            if (string.IsNullOrEmpty(csFile))
-                return;  // no file on disk (e.g. interactive), bail out
-
-            // replace "Foo.Designer.cs" with "Foo.xsd"
-            var xsdFile = Path.Combine(
-                Path.GetDirectoryName(csFile)!,
-                Path.GetFileNameWithoutExtension(csFile)
-                    .Replace(".Designer", "")
-                    + ".xsd"
-            );
-
-            var ds = new DataSet();
-            using var reader = XmlReader.Create(xsdFile);
-            ds.ReadXmlSchema(reader);
+            var ds = LoadDataSet(node);
+            if (ds == null)
+            {
+                base.VisitClassDeclaration(node);
+                return;
+            }
 
             var className = node.Identifier.ToString().Replace("DataTable", "");
             var tableName = ExtractTableName(node) ?? className;
@@ -47,28 +39,7 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
                     Properties = ExtractEntityProperties(dt).ToList()
                 };
 
-                foreach (DataRelation rel in ds.Relations)
-                {
-                    if (rel.ParentTable == dt)
-                    {
-                        entity.Navigations.Add(new Navigation
-                        {
-                            Name = rel.ChildTable.TableName + "s",
-                            TargetEntity = rel.ChildTable.TableName,
-                            IsCollection = true
-                        });
-                    }
-                    if (rel.ChildTable == dt)
-                    {
-                        entity.Navigations.Add(new Navigation
-                        {
-                            Name = rel.ParentTable.TableName,
-                            TargetEntity = rel.ParentTable.TableName,
-                            ForeignKey = rel.ChildColumns.First().ColumnName,
-                            IsCollection = false
-                        });
-                    }
-                }
+                AddRelations(ds, dt, entity);
 
                 if (entity.Properties.Count > 0)
                 {
@@ -82,11 +53,60 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
             }
         }
 
-        
         base.VisitClassDeclaration(node);
     }
 
-    private string? ExtractTableName(ClassDeclarationSyntax classNode)
+    private static DataSet? LoadDataSet(ClassDeclarationSyntax node)
+    {
+        // Resolve the associated XSD file and load its schema into a DataSet
+        var csFile = node.SyntaxTree.FilePath;
+        if (string.IsNullOrEmpty(csFile))
+            return null; // no file on disk (e.g. interactive)
+
+        var xsdFile = Path.Combine(
+            Path.GetDirectoryName(csFile)!,
+            Path.GetFileNameWithoutExtension(csFile)
+                .Replace(".Designer", "")
+                + ".xsd"
+        );
+
+        if (!File.Exists(xsdFile))
+            return null; // XSD file not found
+
+        var ds = new DataSet();
+        using var reader = XmlReader.Create(xsdFile);
+        ds.ReadXmlSchema(reader);
+        return ds;
+    }
+
+    private static void AddRelations(DataSet ds, DataTable dt, Entity entity)
+    {
+        // Populate navigation properties based on dataset relations
+        foreach (DataRelation rel in ds.Relations)
+        {
+            if (rel.ParentTable == dt)
+            {
+                entity.Navigations.Add(new Navigation
+                {
+                    Name = rel.ChildTable.TableName + "s",
+                    TargetEntity = rel.ChildTable.TableName,
+                    IsCollection = true
+                });
+            }
+            if (rel.ChildTable == dt)
+            {
+                entity.Navigations.Add(new Navigation
+                {
+                    Name = rel.ParentTable.TableName,
+                    TargetEntity = rel.ParentTable.TableName,
+                    ForeignKey = rel.ChildColumns.First().ColumnName,
+                    IsCollection = false
+                });
+            }
+        }
+    }
+
+    private static string? ExtractTableName(ClassDeclarationSyntax classNode)
     {
         // look for the ctor whose name matches the class
         var ctor = classNode.Members
@@ -117,7 +137,7 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
 
 
 
-    private IEnumerable<EntityProperty> ExtractEntityProperties(DataTable dt)
+    private static IEnumerable<EntityProperty> ExtractEntityProperties(DataTable dt)
     {
         // Parse the DataColumn initializations in InitClass
         var primaryKeys = new HashSet<string>(dt.PrimaryKey.Select(pk => pk.ColumnName));
@@ -127,7 +147,7 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
             {
                 Name = c.ColumnName,
                 Type = GetColumnType(c),
-                IsPrimaryKey = primaryKeys.Contains(c.ColumnName) || dt.Columns.Count == 1, // Fallback if no PK info
+                IsPrimaryKey = primaryKeys.Contains(c.ColumnName),
                 IsDbGenerated = c.AutoIncrement,
                 ColumnName = c.ColumnName,
                 DbType = c.DataType == typeof(string) && c.MaxLength > 0 ? $"NVARCHAR({c.MaxLength})" : null,
