@@ -1,0 +1,26 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+public class CourseConfiguration : IEntityTypeConfiguration<Course>
+{
+    public void Configure(EntityTypeBuilder<Course> builder)
+    {
+        builder.ToTable("Courses");
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id)
+            .HasColumnName("Id")
+            .ValueGeneratedOnAdd();
+    }
+}
+
+public class StudentConfiguration : IEntityTypeConfiguration<Student>
+{
+    public void Configure(EntityTypeBuilder<Student> builder)
+    {
+        builder.ToTable("Students");
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id)
+            .HasColumnName("Id")
+            .ValueGeneratedOnAdd();
+    }
+}

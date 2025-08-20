@@ -1,0 +1,32 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
+{
+    public void Configure(EntityTypeBuilder<Customer> builder)
+    {
+        builder.ToTable("Customer");
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id)
+            .HasColumnName("Id");
+        builder.Property(e => e.Name)
+            .HasColumnName("Name")
+            .HasColumnType("NVARCHAR(50)");
+    }
+}
+
+public class OrderConfiguration : IEntityTypeConfiguration<Order>
+{
+    public void Configure(EntityTypeBuilder<Order> builder)
+    {
+        builder.ToTable("Order");
+        builder.HasKey(e => e.Id);
+        builder.Property(e => e.Id)
+            .HasColumnName("Id");
+        builder.Property(e => e.CustomerId)
+            .HasColumnName("CustomerId");
+        builder.HasOne(e => e.Customer)
+            .WithMany()
+            .HasForeignKey(e => e.CustomerId);
+    }
+}

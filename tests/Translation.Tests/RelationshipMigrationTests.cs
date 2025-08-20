@@ -15,9 +15,12 @@ public class RelationshipMigrationTests
         var tree = CSharpSyntaxTree.ParseText(code);
         var walker = new LinqToSqlEntitySyntaxWalker();
         walker.Visit(tree.GetRoot());
-        var output = CodeGenerator.GenerateEntities(walker.Entities);
-        var expected = File.ReadAllText(ExpectedPath("tests", "Translation.Tests", "Expected", "Relationships", "LinqToSql", "Entities.txt"));
-        Assert.Equal(Normalize(expected), Normalize(output));
+        var entityText = CodeGenerator.GenerateEntities(walker.Entities);
+        var configText = CodeGenerator.GenerateEntityConfigurations(walker.Entities);
+        var expectedEntities = File.ReadAllText(ExpectedPath("tests", "Translation.Tests", "Expected", "Relationships", "LinqToSql", "Entities.txt"));
+        var expectedConfig = File.ReadAllText(ExpectedPath("tests", "Translation.Tests", "Expected", "Relationships", "LinqToSql", "EntityConfigurations.txt"));
+        Assert.Equal(Normalize(expectedEntities), Normalize(entityText));
+        Assert.Equal(Normalize(expectedConfig), Normalize(configText));
     }
 
     [Fact]
@@ -30,9 +33,12 @@ public class RelationshipMigrationTests
         File.WriteAllText(f1, studentHbm);
         File.WriteAllText(f2, courseHbm);
         var (_, entities) = NHibernateHbmParser.ParseFiles(new[] { f1, f2 });
-        var output = CodeGenerator.GenerateEntities(entities);
-        var expected = File.ReadAllText(ExpectedPath("tests", "Translation.Tests", "Expected", "Relationships", "NHibernate", "Entities.txt"));
-        Assert.Equal(Normalize(expected), Normalize(output));
+        var entityText = CodeGenerator.GenerateEntities(entities);
+        var configText = CodeGenerator.GenerateEntityConfigurations(entities);
+        var expectedEntities = File.ReadAllText(ExpectedPath("tests", "Translation.Tests", "Expected", "Relationships", "NHibernate", "Entities.txt"));
+        var expectedConfig = File.ReadAllText(ExpectedPath("tests", "Translation.Tests", "Expected", "Relationships", "NHibernate", "EntityConfigurations.txt"));
+        Assert.Equal(Normalize(expectedEntities), Normalize(entityText));
+        Assert.Equal(Normalize(expectedConfig), Normalize(configText));
     }
 
     [Fact]
@@ -45,9 +51,12 @@ public class RelationshipMigrationTests
         File.WriteAllText(f1, customerHbm);
         File.WriteAllText(f2, orderHbm);
         var (_, entities) = NHibernateHbmParser.ParseFiles(new[] { f1, f2 });
-        var output = CodeGenerator.GenerateEntities(entities);
-        var expected = File.ReadAllText(ExpectedPath("tests", "Translation.Tests", "Expected", "Relationships", "NHibernate", "OneToMany", "Entities.txt"));
-        Assert.Equal(Normalize(expected), Normalize(output));
+        var entityText = CodeGenerator.GenerateEntities(entities);
+        var configText = CodeGenerator.GenerateEntityConfigurations(entities);
+        var expectedEntities = File.ReadAllText(ExpectedPath("tests", "Translation.Tests", "Expected", "Relationships", "NHibernate", "OneToMany", "Entities.txt"));
+        var expectedConfig = File.ReadAllText(ExpectedPath("tests", "Translation.Tests", "Expected", "Relationships", "NHibernate", "OneToMany", "EntityConfigurations.txt"));
+        Assert.Equal(Normalize(expectedEntities), Normalize(entityText));
+        Assert.Equal(Normalize(expectedConfig), Normalize(configText));
     }
 
     [Fact]
@@ -64,9 +73,12 @@ public class RelationshipMigrationTests
         var tree = CSharpSyntaxTree.ParseText(designer, path: designerPath);
         var walker = new TypedDatasetEntitySyntaxWalker();
         walker.Visit(tree.GetRoot());
-        var output = CodeGenerator.GenerateEntities(walker.Entities);
-        var expected = File.ReadAllText(ExpectedPath("tests", "Translation.Tests", "Expected", "Relationships", "TypedDataSets", "Entities.txt"));
-        Assert.Equal(Normalize(expected), Normalize(output));
+        var entityText = CodeGenerator.GenerateEntities(walker.Entities);
+        var configText = CodeGenerator.GenerateEntityConfigurations(walker.Entities);
+        var expectedEntities = File.ReadAllText(ExpectedPath("tests", "Translation.Tests", "Expected", "Relationships", "TypedDataSets", "Entities.txt"));
+        var expectedConfig = File.ReadAllText(ExpectedPath("tests", "Translation.Tests", "Expected", "Relationships", "TypedDataSets", "EntityConfigurations.txt"));
+        Assert.Equal(Normalize(expectedEntities), Normalize(entityText));
+        Assert.Equal(Normalize(expectedConfig), Normalize(configText));
     }
 
     private static string ExpectedPath(params string[] parts)
