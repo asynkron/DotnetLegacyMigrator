@@ -10,6 +10,12 @@ public class Customer
 
 }
 
+public class Employee : Person
+{
+    public string? Department { get; set; }
+
+}
+
 public class Order
 {
     public int Id { get; set; }
@@ -19,5 +25,13 @@ public class Order
     public string Description { get; set; }
 
     public string? Notes { get; set; }
+
+}
+
+public class Person
+{
+    public int Id { get; set; }
+
+    public string Name { get; set; }
 
 }

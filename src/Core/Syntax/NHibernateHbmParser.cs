@@ -26,127 +26,13 @@ public static class NHibernateHbmParser
             var root = doc.Element(Ns + "hibernate-mapping");
             assembly ??= root?.Attribute("assembly")?.Value;
 
-            // Parse mapped entities
+            // Parse mapped entities including subclasses
             foreach (var classEl in root?.Elements(Ns + "class") ?? Enumerable.Empty<XElement>())
+                ProcessClass(classEl, null, null, null, entities, tables);
+            foreach (var subEl in root?.Elements(Ns + "subclass") ?? Enumerable.Empty<XElement>())
             {
-                var name = classEl.Attribute("name")?.Value ?? "Entity";
-                var table = classEl.Attribute("table")?.Value ?? name;
-                var schema = classEl.Attribute("schema")?.Value;
-                var props = new List<EntityProperty>();
-                var navs = new List<Navigation>();
-
-                // Handle simple <id> elements or composite keys via <composite-id>
-                var compositeIdEl = classEl.Element(Ns + "composite-id");
-                if (compositeIdEl != null)
-                {
-                    // Each <key-property> becomes a primary key property
-                    foreach (var kp in compositeIdEl.Elements(Ns + "key-property"))
-                    {
-                        var kpName = kp.Attribute("name")?.Value ?? "Id";
-                        var type = kp.Attribute("type")?.Value ?? "Int32";
-                        var length = kp.Attribute("length")?.Value;
-                        var column = kp.Attribute("column")?.Value;
-                        var dbType = length != null && type.Equals("String", StringComparison.OrdinalIgnoreCase)
-                            ? $"NVARCHAR({length})"
-                            : null;
-                        props.Add(new EntityProperty
-                        {
-                            Name = kpName,
-                            Type = type,
-                            ColumnName = column ?? kpName,
-                            IsPrimaryKey = true,
-                            DbType = dbType
-                        });
-                    }
-                }
-                else
-                {
-                    var idEl = classEl.Element(Ns + "id");
-                    if (idEl != null)
-                    {
-                        var idName = idEl.Attribute("name")?.Value ?? "Id";
-                        var type = idEl.Attribute("type")?.Value ?? "Int32";
-                        var length = idEl.Attribute("length")?.Value;
-                        var gen = idEl.Element(Ns + "generator");
-                        var dbType = length != null && type.Equals("String", StringComparison.OrdinalIgnoreCase)
-                            ? $"NVARCHAR({length})"
-                            : null;
-                        props.Add(new EntityProperty
-                        {
-                            Name = idName,
-                            Type = type,
-                            ColumnName = idName,
-                            IsPrimaryKey = true,
-                            IsDbGenerated = gen != null,
-                            DbType = dbType
-                        });
-                    }
-                }
-
-                foreach (var p in classEl.Elements(Ns + "property"))
-                {
-                    var propName = p.Attribute("name")?.Value ?? "Prop";
-                    var type = p.Attribute("type")?.Value ?? "String";
-                    var notNull = p.Attribute("not-null")?.Value == "true";
-                    var length = p.Attribute("length")?.Value;
-                    var normalizedType = !notNull && !type.Equals("String", StringComparison.OrdinalIgnoreCase)
-                        ? type + "?"
-                        : type;
-                    if (!notNull && type.Equals("String", StringComparison.OrdinalIgnoreCase))
-                        normalizedType = "String?";
-                    var dbType = length != null && type.Equals("String", StringComparison.OrdinalIgnoreCase)
-                        ? $"NVARCHAR({length})"
-                        : null;
-                    props.Add(new EntityProperty
-                    {
-                        Name = propName,
-                        Type = normalizedType,
-                        ColumnName = propName,
-                        DbType = dbType
-                    });
-                }
-
-                foreach (var m2o in classEl.Elements(Ns + "many-to-one"))
-                {
-                    var navName = m2o.Attribute("name")?.Value ?? "Nav";
-                    var target = m2o.Attribute("class")?.Value ?? "";
-                    var column = m2o.Attribute("column")?.Value;
-                    navs.Add(new Navigation
-                    {
-                        Name = navName,
-                        TargetEntity = target,
-                        ForeignKey = column
-                    });
-                }
-
-                foreach (var set in classEl.Elements(Ns + "set").Concat(classEl.Elements(Ns + "bag")))
-                {
-                    var navName = set.Attribute("name")?.Value ?? "Nav";
-                    var tableAttr = set.Attribute("table")?.Value;
-                    var oneToMany = set.Element(Ns + "one-to-many");
-                    var manyToMany = set.Element(Ns + "many-to-many");
-                    var target = oneToMany?.Attribute("class")?.Value ?? manyToMany?.Attribute("class")?.Value ?? "";
-                    var keyColumn = set.Element(Ns + "key")?.Attribute("column")?.Value;
-                    navs.Add(new Navigation
-                    {
-                        Name = navName,
-                        TargetEntity = target,
-                        IsCollection = true,
-                        ForeignKey = keyColumn,
-                        JoinTable = tableAttr
-                    });
-                }
-
-                entities.Add(new Entity
-                {
-                    Name = name,
-                    TableName = table,
-                    Schema = schema,
-                    Properties = props,
-                    Navigations = navs
-                });
-
-                tables.Add(new TableMapping { Name = table, EntityType = name, Schema = schema, Navigations = navs });
+                var extends = subEl.Attribute("extends")?.Value;
+                ProcessClass(subEl, extends, null, null, entities, tables);
             }
 
             // Parse simple sql-query elements representing stored procedures
@@ -173,5 +59,130 @@ public static class NHibernateHbmParser
         };
 
         return (ctx, entities);
+    }
+
+    private static void ProcessClass(XElement classEl, string? baseType, string? baseTable, string? baseSchema, List<Entity> entities, List<TableMapping> tables)
+    {
+        var name = classEl.Attribute("name")?.Value ?? "Entity";
+        var table = classEl.Attribute("table")?.Value ?? baseTable ?? name;
+        var schema = classEl.Attribute("schema")?.Value ?? baseSchema;
+        var props = new List<EntityProperty>();
+        var navs = new List<Navigation>();
+
+        var compositeIdEl = classEl.Element(Ns + "composite-id");
+        if (compositeIdEl != null)
+        {
+            foreach (var kp in compositeIdEl.Elements(Ns + "key-property"))
+            {
+                var kpName = kp.Attribute("name")?.Value ?? "Id";
+                var type = kp.Attribute("type")?.Value ?? "Int32";
+                var length = kp.Attribute("length")?.Value;
+                var column = kp.Attribute("column")?.Value;
+                var dbType = length != null && type.Equals("String", StringComparison.OrdinalIgnoreCase)
+                    ? $"NVARCHAR({length})"
+                    : null;
+                props.Add(new EntityProperty
+                {
+                    Name = kpName,
+                    Type = type,
+                    ColumnName = column ?? kpName,
+                    IsPrimaryKey = true,
+                    DbType = dbType
+                });
+            }
+        }
+        else
+        {
+            var idEl = classEl.Element(Ns + "id");
+            if (idEl != null)
+            {
+                var idName = idEl.Attribute("name")?.Value ?? "Id";
+                var type = idEl.Attribute("type")?.Value ?? "Int32";
+                var length = idEl.Attribute("length")?.Value;
+                var gen = idEl.Element(Ns + "generator");
+                var dbType = length != null && type.Equals("String", StringComparison.OrdinalIgnoreCase)
+                    ? $"NVARCHAR({length})"
+                    : null;
+                props.Add(new EntityProperty
+                {
+                    Name = idName,
+                    Type = type,
+                    ColumnName = idName,
+                    IsPrimaryKey = true,
+                    IsDbGenerated = gen != null,
+                    DbType = dbType
+                });
+            }
+        }
+
+        foreach (var p in classEl.Elements(Ns + "property"))
+        {
+            var propName = p.Attribute("name")?.Value ?? "Prop";
+            var type = p.Attribute("type")?.Value ?? "String";
+            var notNull = p.Attribute("not-null")?.Value == "true";
+            var length = p.Attribute("length")?.Value;
+            var normalizedType = !notNull && !type.Equals("String", StringComparison.OrdinalIgnoreCase)
+                ? type + "?"
+                : type;
+            if (!notNull && type.Equals("String", StringComparison.OrdinalIgnoreCase))
+                normalizedType = "String?";
+            var dbType = length != null && type.Equals("String", StringComparison.OrdinalIgnoreCase)
+                ? $"NVARCHAR({length})"
+                : null;
+            props.Add(new EntityProperty
+            {
+                Name = propName,
+                Type = normalizedType,
+                ColumnName = propName,
+                DbType = dbType
+            });
+        }
+
+        foreach (var m2o in classEl.Elements(Ns + "many-to-one"))
+        {
+            var navName = m2o.Attribute("name")?.Value ?? "Nav";
+            var target = m2o.Attribute("class")?.Value ?? "";
+            var column = m2o.Attribute("column")?.Value;
+            navs.Add(new Navigation
+            {
+                Name = navName,
+                TargetEntity = target,
+                ForeignKey = column
+            });
+        }
+
+        foreach (var set in classEl.Elements(Ns + "set").Concat(classEl.Elements(Ns + "bag")))
+        {
+            var navName = set.Attribute("name")?.Value ?? "Nav";
+            var tableAttr = set.Attribute("table")?.Value;
+            var oneToMany = set.Element(Ns + "one-to-many");
+            var manyToMany = set.Element(Ns + "many-to-many");
+            var target = oneToMany?.Attribute("class")?.Value ?? manyToMany?.Attribute("class")?.Value ?? "";
+            var keyColumn = set.Element(Ns + "key")?.Attribute("column")?.Value;
+            navs.Add(new Navigation
+            {
+                Name = navName,
+                TargetEntity = target,
+                IsCollection = true,
+                ForeignKey = keyColumn,
+                JoinTable = tableAttr
+            });
+        }
+
+        entities.Add(new Entity
+        {
+            Name = name,
+            BaseType = baseType,
+            TableName = table,
+            Schema = schema,
+            Properties = props,
+            Navigations = navs
+        });
+
+        if (baseType == null || table != baseTable)
+            tables.Add(new TableMapping { Name = table, EntityType = name, Schema = schema, Navigations = navs });
+
+        foreach (var sub in classEl.Elements(Ns + "subclass").Concat(classEl.Elements(Ns + "joined-subclass")))
+            ProcessClass(sub, name, table, schema, entities, tables);
     }
 }

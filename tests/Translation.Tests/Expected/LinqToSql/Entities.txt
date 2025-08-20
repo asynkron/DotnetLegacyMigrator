@@ -10,6 +10,8 @@ public class Customer
 
     public int? Age { get; set; }
 
+    public string CustomerType { get; set; }
+
 }
 
 public class Order
@@ -23,5 +25,11 @@ public class Order
     public decimal? Amount { get; set; }
 
     public string Status { get; set; }
+
+}
+
+public class PreferredCustomer : Customer
+{
+    public string? LoyaltyId { get; set; }
 
 }

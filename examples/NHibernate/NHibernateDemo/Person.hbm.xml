@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="NHibernateDemo" namespace="NHibernateDemo">
+  <class name="Person" table="People">
+    <id name="Id" type="Int32">
+      <generator class="native" />
+    </id>
+    <property name="Name" type="String" not-null="true" />
+    <subclass name="Employee">
+      <property name="Department" type="String" />
+    </subclass>
+  </class>
+</hibernate-mapping>
