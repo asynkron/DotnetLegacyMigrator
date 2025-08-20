@@ -113,22 +113,11 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
 
     public List<MethodDeclarationSyntax> GetTableAdapterMethodsWithDataObjectMethod(ClassDeclarationSyntax tableAdapterNode)
     {
-        // Initialize a list to store matching methods
-        var methodsWithDataObjectMethod = new List<MethodDeclarationSyntax>();
-
-        // Iterate through all method declarations in the TableAdapter node
-        foreach (var method in tableAdapterNode.Members.OfType<MethodDeclarationSyntax>())
-        {
-            // Check if the method has the desired attribute
-            if (method.AttributeLists
-                .SelectMany(attrList => attrList.Attributes)
+        return tableAdapterNode.Members
+            .OfType<MethodDeclarationSyntax>()
+            .Where(m => m.AttributeLists.SelectMany(a => a.Attributes)
                 .Any(attr => attr.ToString().Contains("System.ComponentModel.DataObjectMethod")))
-            {
-                methodsWithDataObjectMethod.Add(method);
-            }
-        }
-
-        return methodsWithDataObjectMethod;
+            .ToList();
     }
 
     public List<MethodCommandInfo> ExtractMethodCommandInfo(ClassDeclarationSyntax tableAdapterNode)
