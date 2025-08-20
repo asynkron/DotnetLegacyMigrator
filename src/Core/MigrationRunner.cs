@@ -23,7 +23,7 @@ public class MigrationRunner
 
         Console.WriteLine($"Loading solution '{solutionPath}'");
         // MetadataCollector internally runs all known syntax walkers and parsers
-        var (allContexts, allEntities) = await MetadataCollector.CollectAsync(solutionPath);
+        var (allContexts, allEntities, spResults) = await MetadataCollector.CollectAsync(solutionPath);
 
         // If nothing was discovered we should surface a helpful message
         if (!allEntities.Any() && !allContexts.Any())
@@ -41,6 +41,13 @@ public class MigrationRunner
             var configCode = CodeGenerator.GenerateEntityConfigurations(allEntities);
             AnsiConsole.Write(new Rule("Entity Configurations"));
             AnsiConsole.MarkupLine(HighlightCSharp(configCode));
+        }
+
+        if (spResults.Any())
+        {
+            var resultCode = CodeGenerator.GenerateStoredProcedureResults(spResults);
+            AnsiConsole.Write(new Rule("Stored Procedure Results"));
+            AnsiConsole.MarkupLine(HighlightCSharp(resultCode));
         }
 
         foreach (var ctx in allContexts)
