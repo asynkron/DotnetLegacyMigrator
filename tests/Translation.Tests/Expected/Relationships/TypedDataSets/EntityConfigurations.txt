@@ -8,10 +8,12 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.ToTable("Customer");
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id)
-            .HasColumnName("Id");
+            .HasColumnName("Id")
+            .IsRequired();
         builder.Property(e => e.Name)
             .HasColumnName("Name")
-            .HasColumnType("NVARCHAR(50)");
+            .HasColumnType("NVARCHAR(50)")
+            .IsRequired();
     }
 }
 
@@ -22,9 +24,11 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.ToTable("Order");
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id)
-            .HasColumnName("Id");
+            .HasColumnName("Id")
+            .IsRequired();
         builder.Property(e => e.CustomerId)
-            .HasColumnName("CustomerId");
+            .HasColumnName("CustomerId")
+            .IsRequired();
         builder.HasOne(e => e.Customer)
             .WithMany()
             .HasForeignKey(e => e.CustomerId);

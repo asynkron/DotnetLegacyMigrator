@@ -9,7 +9,8 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id)
             .HasColumnName("Id")
-            .ValueGeneratedOnAdd();
+            .ValueGeneratedOnAdd()
+            .IsRequired();
         builder.HasMany(e => e.Orders)
             .WithOne()
             .HasForeignKey(e => e.CustomerId);
@@ -24,9 +25,11 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id)
             .HasColumnName("Id")
-            .ValueGeneratedOnAdd();
+            .ValueGeneratedOnAdd()
+            .IsRequired();
         builder.Property(e => e.CustomerId)
-            .HasColumnName("CustomerId");
+            .HasColumnName("CustomerId")
+            .IsRequired();
         builder.HasOne(e => e.Customer)
             .WithMany()
             .HasForeignKey(e => e.CustomerId);
