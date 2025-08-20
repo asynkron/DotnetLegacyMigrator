@@ -26,15 +26,7 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
                 .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.Text == "Schema")?
                 .Expression?.ToString().Trim('"');
 
-            var properties = new List<EntityProperty>();
-            var navigations = new List<Navigation>();
-            foreach (var prop in node.Members.OfType<PropertyDeclarationSyntax>())
-            {
-                if (TryGetNavigation(prop, out var nav))
-                    navigations.Add(nav);
-                else
-                    properties.Add(GetEntityProperty(prop));
-            }
+            var (properties, navigations) = ParseMembers(node);
 
             var entity = new Entity
             {
@@ -50,15 +42,7 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
         else if (baseTypeName != null && Entities.Any(e => e.Name == baseTypeName))
         {
             var baseEntity = Entities.First(e => e.Name == baseTypeName);
-            var properties = new List<EntityProperty>();
-            var navigations = new List<Navigation>();
-            foreach (var prop in node.Members.OfType<PropertyDeclarationSyntax>())
-            {
-                if (TryGetNavigation(prop, out var nav))
-                    navigations.Add(nav);
-                else
-                    properties.Add(GetEntityProperty(prop));
-            }
+            var (properties, navigations) = ParseMembers(node);
 
             var entity = new Entity
             {
@@ -102,6 +86,22 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
         }
 
         base.VisitClassDeclaration(node);
+    }
+
+    // Parses both simple properties and navigation properties from the class.
+    private (List<EntityProperty> properties, List<Navigation> navigations) ParseMembers(ClassDeclarationSyntax node)
+    {
+        var properties = new List<EntityProperty>();
+        var navigations = new List<Navigation>();
+        foreach (var prop in node.Members.OfType<PropertyDeclarationSyntax>())
+        {
+            if (TryGetNavigation(prop, out var nav))
+                navigations.Add(nav);
+            else
+                properties.Add(GetEntityProperty(prop));
+        }
+
+        return (properties, navigations);
     }
 
     private EntityProperty GetEntityProperty(PropertyDeclarationSyntax p)
