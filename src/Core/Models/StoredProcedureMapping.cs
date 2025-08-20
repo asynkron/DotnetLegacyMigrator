@@ -6,7 +6,10 @@ namespace DotnetLegacyMigrator.Models;
 public class StoredProcedureMapping
 {
     public string MethodName { get; set; } = string.Empty;
+
     public string ReturnType { get; set; } = string.Empty;
-    public List<ParameterMapping> Parameters { get; set; } = new();
+
+    public List<ParameterMapping> Parameters { get; set; } = new List<ParameterMapping>();
+
     public string StoredProcName { get; set; } = string.Empty;
 }

@@ -6,7 +6,10 @@ namespace DotnetLegacyMigrator.Models;
 public class TableMapping
 {
     public string Name { get; set; } = string.Empty;
+
     public string EntityType { get; set; } = string.Empty;
+
     public string? Schema { get; set; }
-    public List<Navigation> Navigations { get; set; } = new();
+
+    public List<Navigation> Navigations { get; set; } = new List<Navigation>();
 }
