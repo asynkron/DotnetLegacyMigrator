@@ -1,0 +1,19 @@
+using System.Collections.Generic;
+
+public class CompositeTable
+{
+    public int KeyPart1 { get; set; }
+
+    public int KeyPart2 { get; set; }
+
+    public string? Name { get; set; }
+
+}
+
+public class IdentityTable
+{
+    public int Id { get; set; }
+
+    public string Name { get; set; }
+
+}

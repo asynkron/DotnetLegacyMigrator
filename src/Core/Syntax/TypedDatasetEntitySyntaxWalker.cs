@@ -120,15 +120,15 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
     private IEnumerable<EntityProperty> ExtractEntityProperties(DataTable dt)
     {
         // Parse the DataColumn initializations in InitClass
+        var primaryKeys = new HashSet<string>(dt.PrimaryKey.Select(pk => pk.ColumnName));
         foreach (DataColumn c in dt.Columns)
         {
-
             yield return new EntityProperty
             {
                 Name = c.ColumnName,
                 Type = GetColumnType(c),
-                IsPrimaryKey = dt.PrimaryKey.Any(cc => cc == c) || dt.Columns.Count == 1, // This information is typically unavailable in the code
-                IsDbGenerated = false, // Same as above
+                IsPrimaryKey = primaryKeys.Contains(c.ColumnName) || dt.Columns.Count == 1, // Fallback if no PK info
+                IsDbGenerated = c.AutoIncrement,
                 ColumnName = c.ColumnName,
                 DbType = c.DataType == typeof(string) && c.MaxLength > 0 ? $"NVARCHAR({c.MaxLength})" : null,
                 IsNullable = c.AllowDBNull
