@@ -13,8 +13,8 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
 
     public override void VisitClassDeclaration(ClassDeclarationSyntax node)
     {
-        if (node.BaseList != null && node.BaseList.Types
-                .Any(t => t.Type.ToString().Contains("DataContext")))
+        if (node.BaseList?.Types
+                .Any(t => t.Type.ToString().Contains("DataContext")) == true)
         {
             var context = new DataContext
             {

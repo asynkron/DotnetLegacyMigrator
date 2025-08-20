@@ -14,8 +14,8 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
     public override void VisitClassDeclaration(ClassDeclarationSyntax node)
     {
 
-        if (node.BaseList != null && node.BaseList.Types
-            .Any(t => t.Type.ToString().Contains("TypedTableBase") || t.Type.ToString().Contains("DataTable")))
+        if (node.BaseList?.Types
+            .Any(t => t.Type.ToString().Contains("TypedTableBase") || t.Type.ToString().Contains("DataTable")) == true)
         {
             // get the .cs file path
             var csFile = node.SyntaxTree.FilePath;

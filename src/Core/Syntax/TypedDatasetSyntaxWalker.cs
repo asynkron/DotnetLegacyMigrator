@@ -21,8 +21,7 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
     public override void VisitClassDeclaration(ClassDeclarationSyntax node)
     {
         // Check for Typed DataSet class
-        if (node.BaseList != null &&
-            node.BaseList.Types.Any(t => t.Type.ToString().Contains("DataSet")))
+        if (node.BaseList?.Types.Any(t => t.Type.ToString().Contains("DataSet")) == true)
         {
             var name = node.Identifier.ToString();
             var context = new DataContext
@@ -232,9 +231,8 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
         // Look for nested classes that represent tables
         foreach (var member in datasetClass.Members.OfType<ClassDeclarationSyntax>())
         {
-            if (member.BaseList != null &&
-                member.BaseList.Types.Any(t => t.Type.ToString().Contains("TypedTableBase") ||
-                                             t.Type.ToString().Contains("DataTable")))
+            if (member.BaseList?.Types.Any(t => t.Type.ToString().Contains("TypedTableBase") ||
+                                             t.Type.ToString().Contains("DataTable")) == true)
             {
                 if (member.Identifier.ToString() == "DataTable1")
                     continue;
