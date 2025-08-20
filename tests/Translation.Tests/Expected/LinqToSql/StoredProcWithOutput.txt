@@ -1,0 +1,13 @@
+using Microsoft.EntityFrameworkCore;
+using System.Linq;
+
+public class MyContext : DbContext
+{
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+    }
+
+    public IQueryable<int> MyProc(string inParam /* Size=50 */, ref string inOutParam /* Size=100 */, out int outParam) =>
+        FromExpression(() => MyProc(inParam, ref inOutParam, out outParam));
+}

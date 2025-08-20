@@ -230,8 +230,17 @@ public static class CodeGenerator
         // Emit stored procedure wrappers if any were discovered
         foreach (var sp in context.StoredProcedures.OrderBy(s => s.MethodName))
         {
-            var paramList = string.Join(", ", sp.Parameters.Select(p => $"{p.Type} {p.Name}"));
-            var argList = string.Join(", ", sp.Parameters.Select(p => p.Name));
+            var paramList = string.Join(", ", sp.Parameters.Select(p =>
+            {
+                var dir = p.Direction == "Output" ? "out " : p.Direction == "InputOutput" ? "ref " : string.Empty;
+                var comment = p.Size.HasValue ? $" /* Size={p.Size} */" : string.Empty;
+                return $"{dir}{p.Type} {p.Name}{comment}";
+            }));
+            var argList = string.Join(", ", sp.Parameters.Select(p =>
+            {
+                var dir = p.Direction == "Output" ? "out " : p.Direction == "InputOutput" ? "ref " : string.Empty;
+                return $"{dir}{p.Name}";
+            }));
             sb.AppendLine();
             sb.AppendLine($"    public IQueryable<{sp.ReturnType}> {sp.MethodName}({paramList}) =>");
             sb.AppendLine($"        FromExpression(() => {sp.MethodName}({argList}));");
