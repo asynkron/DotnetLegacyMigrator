@@ -21,4 +21,9 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="*" PrivateAssets="all" />
+    <PackageReference Include="StyleCop.Analyzers" Version="*" PrivateAssets="all" />
+  </ItemGroup>
+
 </Project>
