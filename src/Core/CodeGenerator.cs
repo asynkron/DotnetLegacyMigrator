@@ -122,8 +122,9 @@ public static class CodeGenerator
     /// <returns>The generated configuration source.</returns>
     public static string GenerateEntityConfigurations(IEnumerable<Entity> entities)
     {
+        var entityList = entities.ToList();
         var extraUsings = new HashSet<string>();
-        foreach (var prop in entities.SelectMany(e => e.Properties))
+        foreach (var prop in entityList.SelectMany(e => e.Properties))
         {
             if (IsXmlType(prop.Type))
                 extraUsings.Add("System.Xml.Linq");
@@ -136,7 +137,9 @@ public static class CodeGenerator
             sb.AppendLine($"using {u};");
         sb.AppendLine();
 
-        foreach (var entity in entities.OrderBy(e => e.Name))
+        var lookup = entityList.ToDictionary(e => e.Name);
+
+        foreach (var entity in entityList.OrderBy(e => e.Name))
         {
             sb.AppendLine($"public class {entity.Name}Configuration : IEntityTypeConfiguration<{entity.Name}>");
             sb.AppendLine("{");
@@ -164,6 +167,37 @@ public static class CodeGenerator
                 calls.Add(prop.IsNullable ? ".IsRequired(false)" : ".IsRequired()");
                 sb.AppendLine($"        builder.Property(e => e.{prop.Name})");
                 sb.AppendLine($"            {string.Join("\n            ", calls)};");
+            }
+
+            foreach (var nav in entity.Navigations)
+            {
+                if (string.IsNullOrWhiteSpace(nav.ForeignKey) || !string.IsNullOrWhiteSpace(nav.JoinTable))
+                    continue;
+
+                if (nav.IsCollection)
+                {
+                    if (!lookup.TryGetValue(nav.TargetEntity, out var target))
+                        continue;
+                    var fkInTarget = target.Properties.Any(p => p.Name == nav.ForeignKey);
+                    var fkIsPrimaryOfCurrent = entity.Properties.Any(p => p.IsPrimaryKey && p.Name == nav.ForeignKey);
+                    if (!fkInTarget || fkIsPrimaryOfCurrent)
+                        continue;
+                    sb.AppendLine($"        builder.HasMany(e => e.{nav.Name})");
+                    sb.AppendLine(nav.Inverse != null
+                        ? $"            .WithOne(e => e.{nav.Inverse})"
+                        : "            .WithOne()");
+                    sb.AppendLine($"            .HasForeignKey(e => e.{nav.ForeignKey});");
+                }
+                else
+                {
+                    if (!entity.Properties.Any(p => p.Name == nav.ForeignKey))
+                        continue;
+                    sb.AppendLine($"        builder.HasOne(e => e.{nav.Name})");
+                    sb.AppendLine(nav.Inverse != null
+                        ? $"            .WithMany(e => e.{nav.Inverse})"
+                        : "            .WithMany()");
+                    sb.AppendLine($"            .HasForeignKey(e => e.{nav.ForeignKey});");
+                }
             }
 
             sb.AppendLine("    }");
