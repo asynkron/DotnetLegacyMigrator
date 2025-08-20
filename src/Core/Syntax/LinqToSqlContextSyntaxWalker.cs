@@ -13,8 +13,8 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
 
     public override void VisitClassDeclaration(ClassDeclarationSyntax node)
     {
-        if (node.BaseList?.Types
-                .Any(t => t.Type.ToString().Contains("DataContext")) == true)
+        if (node.BaseList != null && node.BaseList.Types
+                .Any(t => SyntaxUtils.HasIdentifier(t.Type, "DataContext")))
         {
             var context = new DataContext
             {
@@ -53,7 +53,7 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
     {
         var attribute = m.AttributeLists
             .SelectMany(a => a.Attributes)
-            .First(a => a.Name.ToString().Contains("Function"));
+            .First(a => SyntaxUtils.HasIdentifier(a, "Function"));
 
         var nameArgument = attribute.ArgumentList?.Arguments
             .First(arg => arg.NameEquals?.Name.Identifier.Text == "Name");
@@ -108,7 +108,7 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
     {
         return method.AttributeLists
             .SelectMany(a => a.Attributes)
-            .Any(a => a.Name.ToString().Contains("Function"));
+            .Any(a => SyntaxUtils.HasIdentifier(a, "Function"));
     }
 
     private string GetReturnType(MethodDeclarationSyntax method)
@@ -128,7 +128,7 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
 
             int? size = null;
             var attr = p.AttributeLists.SelectMany(a => a.Attributes)
-                .FirstOrDefault(a => a.Name.ToString().Contains("Parameter"));
+                .FirstOrDefault(a => SyntaxUtils.HasIdentifier(a, "Parameter"));
             var dbTypeArg = attr?.ArgumentList?.Arguments
                 .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.Text == "DbType");
             var dbType = dbTypeArg?.Expression.ToString().Trim('"');

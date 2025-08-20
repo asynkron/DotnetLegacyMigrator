@@ -14,7 +14,7 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
     {
         var tableAttribute = node.AttributeLists
             .SelectMany(al => al.Attributes)
-            .FirstOrDefault(a => a.Name.ToString().Contains("Table"));
+            .FirstOrDefault(a => SyntaxUtils.HasIdentifier(a, "Table"));
 
         var baseTypeName = node.BaseList?.Types.FirstOrDefault()?.Type.ToString();
         if (tableAttribute != null)
@@ -168,7 +168,7 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
         // Heuristic: if the class name ends with "Result" and has no TableAttribute, we consider it a stored procedure result type
         return node.Identifier.ToString().EndsWith("Result") && !node.AttributeLists
             .SelectMany(al => al.Attributes)
-            .Any(a => a.Name.ToString().Contains("TableAttribute"));
+            .Any(a => SyntaxUtils.HasIdentifier(a, "Table"));
     }
 
     private bool TryGetNavigation(PropertyDeclarationSyntax p, out Navigation nav)
@@ -176,7 +176,7 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
         nav = default!;
         var assoc = p.AttributeLists
             .SelectMany(al => al.Attributes)
-            .FirstOrDefault(a => a.Name.ToString().Contains("Association"));
+            .FirstOrDefault(a => SyntaxUtils.HasIdentifier(a, "Association"));
         if (assoc == null)
             return false;
 
