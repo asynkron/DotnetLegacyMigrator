@@ -9,7 +9,8 @@ public class CourseConfiguration : IEntityTypeConfiguration<Course>
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id)
             .HasColumnName("Id")
-            .ValueGeneratedOnAdd();
+            .ValueGeneratedOnAdd()
+            .IsRequired();
     }
 }
 
@@ -21,6 +22,7 @@ public class StudentConfiguration : IEntityTypeConfiguration<Student>
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id)
             .HasColumnName("Id")
-            .ValueGeneratedOnAdd();
+            .ValueGeneratedOnAdd()
+            .IsRequired();
     }
 }
