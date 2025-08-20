@@ -145,7 +145,10 @@ public static class CodeGenerator
             sb.AppendLine("{");
             sb.AppendLine($"    public void Configure(EntityTypeBuilder<{entity.Name}> builder)");
             sb.AppendLine("    {");
-            sb.AppendLine($"        builder.ToTable(\"{entity.TableName}\");");
+            var toTable = string.IsNullOrWhiteSpace(entity.Schema)
+                ? $"builder.ToTable(\"{entity.TableName}\");"
+                : $"builder.ToTable(\"{entity.TableName}\", \"{entity.Schema}\");";
+            sb.AppendLine($"        {toTable}");
 
             var keys = entity.Properties.Where(p => p.IsPrimaryKey).ToList();
             if (keys.Count == 1)
@@ -298,7 +301,11 @@ public static class CodeGenerator
         sb.AppendLine("    protected override void OnModelCreating(ModelBuilder modelBuilder)");
         sb.AppendLine("    {");
         foreach (var table in context.Tables.OrderBy(t => t.EntityType))
+        {
             sb.AppendLine($"        modelBuilder.ApplyConfiguration(new {table.EntityType}Configuration());");
+            if (!string.IsNullOrWhiteSpace(table.Schema))
+                sb.AppendLine($"        modelBuilder.Entity<{table.EntityType}>().ToTable(\"{table.Name}\", \"{table.Schema}\");");
+        }
         sb.AppendLine("    }");
 
         // Emit stored procedure wrappers if any were discovered

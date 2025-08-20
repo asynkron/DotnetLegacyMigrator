@@ -7,5 +7,6 @@ public class DemoContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new DocConfiguration());
+        modelBuilder.Entity<Doc>().ToTable("Docs", "legacy");
     }
 }

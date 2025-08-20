@@ -13,6 +13,7 @@ public class TypeNormalizationTests
         {
             Name = "Doc",
             TableName = "Docs",
+            Schema = "legacy",
             Properties = new List<EntityProperty>
             {
                 new()
@@ -39,7 +40,7 @@ public class TypeNormalizationTests
             Name = "DemoContext",
             Tables =
             {
-                new TableMapping { Name = "Docs", EntityType = "Doc" }
+                new TableMapping { Name = "Docs", EntityType = "Doc", Schema = "legacy" }
             }
         };
 
