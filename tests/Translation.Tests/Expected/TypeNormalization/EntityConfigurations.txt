@@ -6,7 +6,7 @@ public class DocConfiguration : IEntityTypeConfiguration<Doc>
 {
     public void Configure(EntityTypeBuilder<Doc> builder)
     {
-        builder.ToTable("Docs");
+        builder.ToTable("Docs", "legacy");
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id)
             .HasColumnName("Id");

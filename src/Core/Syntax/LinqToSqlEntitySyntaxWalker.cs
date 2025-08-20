@@ -21,6 +21,9 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
             var tableName = tableAttribute.ArgumentList?.Arguments
                 .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.Text == "Name")?
                 .Expression?.ToString().Trim('"');
+            var schemaName = tableAttribute.ArgumentList?.Arguments
+                .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.Text == "Schema")?
+                .Expression?.ToString().Trim('"');
 
             var properties = new List<EntityProperty>();
             var navigations = new List<Navigation>();
@@ -36,6 +39,7 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
             {
                 Name = node.Identifier.ToString(),
                 TableName = tableName ?? node.Identifier.ToString(),
+                Schema = schemaName,
                 Properties = properties,
                 Navigations = navigations
             };

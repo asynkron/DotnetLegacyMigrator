@@ -31,6 +31,7 @@ public static class NHibernateHbmParser
             {
                 var name = classEl.Attribute("name")?.Value ?? "Entity";
                 var table = classEl.Attribute("table")?.Value ?? name;
+                var schema = classEl.Attribute("schema")?.Value;
                 var props = new List<EntityProperty>();
                 var navs = new List<Navigation>();
 
@@ -113,11 +114,12 @@ public static class NHibernateHbmParser
                 {
                     Name = name,
                     TableName = table,
+                    Schema = schema,
                     Properties = props,
                     Navigations = navs
                 });
 
-                tables.Add(new TableMapping { Name = table, EntityType = name, Navigations = navs });
+                tables.Add(new TableMapping { Name = table, EntityType = name, Schema = schema, Navigations = navs });
             }
 
             // Parse simple sql-query elements representing stored procedures
