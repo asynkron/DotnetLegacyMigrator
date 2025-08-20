@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema id="KeyDataSet" xmlns="" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+  <xs:element name="KeyDataSet" msdata:IsDataSet="true">
+    <xs:complexType>
+      <xs:choice maxOccurs="unbounded">
+        <xs:element name="CompositeTable">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="KeyPart1" type="xs:int" />
+              <xs:element name="KeyPart2" type="xs:int" />
+              <xs:element name="Name" minOccurs="0">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="IdentityTable">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="Id" type="xs:int" msdata:AutoIncrement="true" msdata:AutoIncrementSeed="1" msdata:AutoIncrementStep="1" />
+              <xs:element name="Name">
+                <xs:simpleType>
+                  <xs:restriction base="xs:string">
+                    <xs:maxLength value="50" />
+                  </xs:restriction>
+                </xs:simpleType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:choice>
+    </xs:complexType>
+    <xs:unique name="CompositeTableKey" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//CompositeTable" />
+      <xs:field xpath="KeyPart1" />
+      <xs:field xpath="KeyPart2" />
+    </xs:unique>
+    <xs:unique name="IdentityTableKey" msdata:PrimaryKey="true">
+      <xs:selector xpath=".//IdentityTable" />
+      <xs:field xpath="Id" />
+    </xs:unique>
+  </xs:element>
+</xs:schema>
