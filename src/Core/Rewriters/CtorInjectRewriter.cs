@@ -136,7 +136,7 @@ public class CtorInjectRewriter : CSharpSyntaxRewriter
     }
 
     // Helper method to check if a field is initialized from a constructor parameter
-    private bool IsFieldInitializedFromCtorParam(ConstructorDeclarationSyntax constructor, string fieldName)
+    private static bool IsFieldInitializedFromCtorParam(ConstructorDeclarationSyntax constructor, string fieldName)
     {
         return constructor.Body!.Statements
             .OfType<ExpressionStatementSyntax>()

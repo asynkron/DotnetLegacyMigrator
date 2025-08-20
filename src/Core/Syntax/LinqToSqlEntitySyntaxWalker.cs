@@ -1,5 +1,6 @@
-﻿using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System;
 
 using DotnetLegacyMigrator.Models;
 
@@ -8,6 +9,7 @@ namespace DotnetLegacyMigrator.Syntax;
 public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
 {
     public List<Entity> Entities { get; } = new List<Entity>();
+
     public List<StoredProcedureResult> StoredProcedureResults { get; } = new List<StoredProcedureResult>();
 
     public override void VisitClassDeclaration(ClassDeclarationSyntax node)
@@ -35,7 +37,7 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
                 TableName = tableName ?? node.Identifier.ToString(),
                 Schema = schemaName,
                 Properties = properties,
-                Navigations = navigations
+                Navigations = navigations,
             };
             Entities.Add(entity);
         }
@@ -51,7 +53,7 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
                 TableName = baseEntity.TableName,
                 Schema = baseEntity.Schema,
                 Properties = properties,
-                Navigations = navigations
+                Navigations = navigations,
             };
             Entities.Add(entity);
         }
@@ -79,8 +81,8 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
                                 .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.Text == "DbType")?
                                 .Expression?.ToString().Trim('"'))
                             .FirstOrDefault(),
-                        IsNullable = GetIsNullable(p)
-                    }).ToList()
+                        IsNullable = GetIsNullable(p),
+                    }).ToList(),
             };
             StoredProcedureResults.Add(result);
         }
@@ -89,22 +91,26 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
     }
 
     // Parses both simple properties and navigation properties from the class.
-    private (List<EntityProperty> properties, List<Navigation> navigations) ParseMembers(ClassDeclarationSyntax node)
+    private static (List<EntityProperty> properties, List<Navigation> navigations) ParseMembers(ClassDeclarationSyntax node)
     {
         var properties = new List<EntityProperty>();
         var navigations = new List<Navigation>();
         foreach (var prop in node.Members.OfType<PropertyDeclarationSyntax>())
         {
             if (TryGetNavigation(prop, out var nav))
+            {
                 navigations.Add(nav);
+            }
             else
+            {
                 properties.Add(GetEntityProperty(prop));
+            }
         }
 
         return (properties, navigations);
     }
 
-    private EntityProperty GetEntityProperty(PropertyDeclarationSyntax p)
+    private static EntityProperty GetEntityProperty(PropertyDeclarationSyntax p)
     {
         return new EntityProperty
         {
@@ -114,7 +120,7 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
             IsDbGenerated = GetIsDbGenerated(p),
             ColumnName = GetColumnName(p),
             DbType = GetDbType(p),
-            IsNullable = GetIsNullable(p)
+            IsNullable = GetIsNullable(p),
         };
     }
 
@@ -163,28 +169,30 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
                 .Any(a => a.ToString().Contains("CanBeNull=true"));
     }
 
-    private bool IsStoredProcedureResult(ClassDeclarationSyntax node)
+    private static bool IsStoredProcedureResult(ClassDeclarationSyntax node)
     {
         // Heuristic: if the class name ends with "Result" and has no TableAttribute, we consider it a stored procedure result type
-        return node.Identifier.ToString().EndsWith("Result") && !node.AttributeLists
+        return node.Identifier.ToString().EndsWith("Result", StringComparison.Ordinal) && !node.AttributeLists
             .SelectMany(al => al.Attributes)
             .Any(a => SyntaxUtils.HasIdentifier(a, "Table"));
     }
 
-    private bool TryGetNavigation(PropertyDeclarationSyntax p, out Navigation nav)
+    private static bool TryGetNavigation(PropertyDeclarationSyntax p, out Navigation nav)
     {
         nav = default!;
         var assoc = p.AttributeLists
             .SelectMany(al => al.Attributes)
             .FirstOrDefault(a => SyntaxUtils.HasIdentifier(a, "Association"));
         if (assoc == null)
+        {
             return false;
+        }
 
         var typeName = p.Type.ToString();
-        bool isCollection = typeName.StartsWith("EntitySet<");
+        bool isCollection = typeName.StartsWith("EntitySet<", StringComparison.Ordinal);
         string target = isCollection
             ? typeName.Substring("EntitySet<".Length).TrimEnd('>')
-            : typeName.StartsWith("EntityRef<")
+            : typeName.StartsWith("EntityRef<", StringComparison.Ordinal)
                 ? typeName.Substring("EntityRef<".Length).TrimEnd('>')
                 : typeName;
 
@@ -201,7 +209,7 @@ public class LinqToSqlEntitySyntaxWalker : CSharpSyntaxWalker
             TargetEntity = target,
             IsCollection = isCollection,
             ForeignKey = fk,
-            AssociationName = name
+            AssociationName = name,
         };
         return true;
     }
