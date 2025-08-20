@@ -120,11 +120,12 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
     {
         return method.ParameterList.Parameters.Select(p =>
         {
-            var direction = "Input";
-            if (p.Modifiers.Any(m => m.IsKind(SyntaxKind.OutKeyword)))
-                direction = "Output";
-            else if (p.Modifiers.Any(m => m.IsKind(SyntaxKind.RefKeyword)))
-                direction = "InputOutput";
+            var direction = p.Modifiers switch
+            {
+                var mods when mods.Any(m => m.IsKind(SyntaxKind.OutKeyword)) => "Output",
+                var mods when mods.Any(m => m.IsKind(SyntaxKind.RefKeyword)) => "InputOutput",
+                _ => "Input"
+            };
 
             int? size = null;
             var attr = p.AttributeLists.SelectMany(a => a.Attributes)
