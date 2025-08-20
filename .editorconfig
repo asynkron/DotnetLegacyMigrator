@@ -6,10 +6,10 @@ indent_style = space
 indent_size = 4
 end_of_line = lf
 insert_final_newline = true
-dotnet_style_qualification_for_field = false:suggestion
-dotnet_style_qualification_for_property = false:suggestion
-dotnet_style_qualification_for_method = false:suggestion
-dotnet_style_qualification_for_event = false:suggestion
+dotnet_style_qualification_for_field = false:none
+dotnet_style_qualification_for_property = false:none
+dotnet_style_qualification_for_method = false:none
+dotnet_style_qualification_for_event = false:none
 dotnet_style_require_accessibility_modifiers = always:suggestion
 csharp_style_var_for_built_in_types = false:suggestion
 csharp_style_var_when_type_is_apparent = true:suggestion
@@ -26,4 +26,14 @@ dotnet_diagnostic.IDE0072.severity = warning   # switch cases can be simplified
 dotnet_diagnostic.IDE0010.severity = warning   # add/modify required cases
 dotnet_diagnostic.IDE0044.severity = suggestion # make field readonly
 dotnet_analyzer_diagnostic.severity = warning
+
+# Disable noisy style rules
+dotnet_diagnostic.SA1101.severity = none      # prefix local calls with this
+dotnet_diagnostic.SA1200.severity = none      # using directives inside namespace
+dotnet_diagnostic.SA1208.severity = none      # using directives ordered correctly
+dotnet_diagnostic.SA1210.severity = none      # using directives ordered alphabetically
+dotnet_diagnostic.SA1633.severity = none      # file headers required
+dotnet_diagnostic.CA1707.severity = none      # underscores in test method names
+dotnet_diagnostic.SA0001.severity = none      # XML comment analysis disabled
+dotnet_diagnostic.CA1848.severity = none      # prefer LoggerMessage delegates
 

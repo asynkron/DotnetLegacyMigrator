@@ -7,7 +7,7 @@ using DotnetLegacyMigrator.Models;
 
 namespace DotnetLegacyMigrator.Syntax;
 
-public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
+public partial class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
 {
     public List<DataContext> Contexts { get; } = new List<DataContext>();
 
@@ -27,9 +27,9 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
                         {
                             PropertyDeclarationSyntax p => p.Identifier.ToString(),
                             FieldDeclarationSyntax f => f.Declaration.Variables.First().Identifier.ToString(),
-                            _ => string.Empty
+                            _ => string.Empty,
                         },
-                        EntityType = GetEntityType(m)!
+                        EntityType = GetEntityType(m) ?? string.Empty,
                     })
                     .ToList(),
                 StoredProcedures = node.Members.OfType<MethodDeclarationSyntax>()
@@ -39,8 +39,8 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
                         MethodName = GetSprocMethodName(m),
                         StoredProcName = GetStoredProcName(m),
                         ReturnType = GetReturnType(m),
-                        Parameters = GetParameters(m)
-                    }).ToList()
+                        Parameters = GetParameters(m),
+                    }).ToList(),
             };
 
             Contexts.Add(context);
@@ -49,7 +49,7 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
         base.VisitClassDeclaration(node);
     }
 
-    private string GetStoredProcName(MethodDeclarationSyntax m)
+    private static string GetStoredProcName(MethodDeclarationSyntax m)
     {
         var attribute = m.AttributeLists
             .SelectMany(a => a.Attributes)
@@ -104,19 +104,16 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
         return false;
     }
 
-    private bool IsStoredProcedureMethod(MethodDeclarationSyntax method)
+    private static bool IsStoredProcedureMethod(MethodDeclarationSyntax method)
     {
         return method.AttributeLists
             .SelectMany(a => a.Attributes)
             .Any(a => SyntaxUtils.HasIdentifier(a, "Function"));
     }
 
-    private string GetReturnType(MethodDeclarationSyntax method)
-    {
-        return method.ReturnType.ToString();
-    }
+    private static string GetReturnType(MethodDeclarationSyntax method) => method.ReturnType.ToString();
 
-    private List<ParameterMapping> GetParameters(MethodDeclarationSyntax method)
+    private static List<ParameterMapping> GetParameters(MethodDeclarationSyntax method)
     {
         return method.ParameterList.Parameters.Select(p =>
         {
@@ -135,9 +132,11 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
             var dbType = dbTypeArg?.Expression.ToString().Trim('"');
             if (dbType != null)
             {
-                var match = Regex.Match(dbType, @"\((\d+)\)");
+                var match = SizeRegex().Match(dbType);
                 if (match.Success && int.TryParse(match.Groups[1].Value, out var s))
+                {
                     size = s;
+                }
             }
 
             return new ParameterMapping
@@ -146,8 +145,11 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
                 Type = p.Type?.ToString() ?? string.Empty,
                 IsNullable = p.Type is NullableTypeSyntax,
                 Direction = direction,
-                Size = size
+                Size = size,
             };
         }).ToList();
     }
+
+    [GeneratedRegex(@"\((\d+)\)")]
+    private static partial Regex SizeRegex();
 }

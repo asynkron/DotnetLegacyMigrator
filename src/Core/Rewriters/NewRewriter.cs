@@ -108,10 +108,10 @@ public class NewRewriter : CSharpSyntaxRewriter
             }
 
             // Insert the field declarations at the top of the class
-            if (fieldDeclarations.Any())
-            {
-                node = node.WithMembers(node.Members.InsertRange(0, fieldDeclarations));
-            }
+              if (fieldDeclarations.Count > 0)
+              {
+                  node = node.WithMembers(node.Members.InsertRange(0, fieldDeclarations));
+              }
 
             return node;
         }
