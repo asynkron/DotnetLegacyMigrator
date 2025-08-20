@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="CompositeDemo">
+  <class name="OrderItem" table="OrderItem">
+    <composite-id>
+      <key-property name="OrderId" type="Int32" />
+      <key-property name="ProductId" type="Int32" />
+    </composite-id>
+    <property name="Quantity" type="Int32" not-null="true" />
+  </class>
+</hibernate-mapping>

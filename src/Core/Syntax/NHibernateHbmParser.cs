@@ -35,25 +35,52 @@ public static class NHibernateHbmParser
                 var props = new List<EntityProperty>();
                 var navs = new List<Navigation>();
 
-                var idEl = classEl.Element(Ns + "id");
-                if (idEl != null)
+                // Handle simple <id> elements or composite keys via <composite-id>
+                var compositeIdEl = classEl.Element(Ns + "composite-id");
+                if (compositeIdEl != null)
                 {
-                    var idName = idEl.Attribute("name")?.Value ?? "Id";
-                    var type = idEl.Attribute("type")?.Value ?? "Int32";
-                    var length = idEl.Attribute("length")?.Value;
-                    var gen = idEl.Element(Ns + "generator");
-                    var dbType = length != null && type.Equals("String", StringComparison.OrdinalIgnoreCase)
-                        ? $"NVARCHAR({length})"
-                        : null;
-                    props.Add(new EntityProperty
+                    // Each <key-property> becomes a primary key property
+                    foreach (var kp in compositeIdEl.Elements(Ns + "key-property"))
                     {
-                        Name = idName,
-                        Type = type,
-                        ColumnName = idName,
-                        IsPrimaryKey = true,
-                        IsDbGenerated = gen != null,
-                        DbType = dbType
-                    });
+                        var kpName = kp.Attribute("name")?.Value ?? "Id";
+                        var type = kp.Attribute("type")?.Value ?? "Int32";
+                        var length = kp.Attribute("length")?.Value;
+                        var column = kp.Attribute("column")?.Value;
+                        var dbType = length != null && type.Equals("String", StringComparison.OrdinalIgnoreCase)
+                            ? $"NVARCHAR({length})"
+                            : null;
+                        props.Add(new EntityProperty
+                        {
+                            Name = kpName,
+                            Type = type,
+                            ColumnName = column ?? kpName,
+                            IsPrimaryKey = true,
+                            DbType = dbType
+                        });
+                    }
+                }
+                else
+                {
+                    var idEl = classEl.Element(Ns + "id");
+                    if (idEl != null)
+                    {
+                        var idName = idEl.Attribute("name")?.Value ?? "Id";
+                        var type = idEl.Attribute("type")?.Value ?? "Int32";
+                        var length = idEl.Attribute("length")?.Value;
+                        var gen = idEl.Element(Ns + "generator");
+                        var dbType = length != null && type.Equals("String", StringComparison.OrdinalIgnoreCase)
+                            ? $"NVARCHAR({length})"
+                            : null;
+                        props.Add(new EntityProperty
+                        {
+                            Name = idName,
+                            Type = type,
+                            ColumnName = idName,
+                            IsPrimaryKey = true,
+                            IsDbGenerated = gen != null,
+                            DbType = dbType
+                        });
+                    }
                 }
 
                 foreach (var p in classEl.Elements(Ns + "property"))
