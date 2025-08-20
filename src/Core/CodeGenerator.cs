@@ -261,21 +261,14 @@ public static class CodeGenerator
 
     private static void ResolveInverses(IEnumerable<Entity> entities)
     {
-        var allNavs = entities.SelectMany(e => e.Navigations.Select(n => (Entity: e, Nav: n))).ToList();
+        // Combine association name and join table into a single key so we only
+        // group once. This avoids iterating the navigation list multiple times.
+        var allNavs = entities
+            .SelectMany(e => e.Navigations.Select(n => (Entity: e, Nav: n, Key: n.AssociationName ?? n.JoinTable)))
+            .ToList();
 
-        foreach (var group in allNavs.Where(t => !string.IsNullOrWhiteSpace(t.Nav.AssociationName))
-                                      .GroupBy(t => t.Nav.AssociationName))
-        {
-            var pair = group.ToList();
-            if (pair.Count == 2)
-            {
-                pair[0].Nav.Inverse = pair[1].Nav.Name;
-                pair[1].Nav.Inverse = pair[0].Nav.Name;
-            }
-        }
-
-        foreach (var group in allNavs.Where(t => !string.IsNullOrWhiteSpace(t.Nav.JoinTable))
-                                      .GroupBy(t => t.Nav.JoinTable))
+        foreach (var group in allNavs.Where(t => !string.IsNullOrWhiteSpace(t.Key))
+                                     .GroupBy(t => t.Key))
         {
             var pair = group.ToList();
             if (pair.Count == 2)

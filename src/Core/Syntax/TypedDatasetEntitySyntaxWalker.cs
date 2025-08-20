@@ -14,8 +14,10 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
     public List<StoredProcedureResult> StoredProcedureResults { get; } = new List<StoredProcedureResult>();
     public override void VisitClassDeclaration(ClassDeclarationSyntax node)
     {
+
         if (node.BaseList != null && node.BaseList.Types
             .Any(t => t.Type.ToString().Contains("TypedTableBase") || t.Type.ToString().Contains("DataTable")))
+
         {
             var ds = LoadDataSet(node);
             if (ds == null)
