@@ -4,6 +4,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Data;
 using System.Xml;
+using System.IO;
 
 namespace DotnetLegacyMigrator.Syntax;
 
@@ -53,7 +54,7 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
         base.VisitClassDeclaration(node);
     }
 
-    private DataSet? LoadDataSet(ClassDeclarationSyntax node)
+    private static DataSet? LoadDataSet(ClassDeclarationSyntax node)
     {
         // Resolve the associated XSD file and load its schema into a DataSet
         var csFile = node.SyntaxTree.FilePath;
@@ -67,13 +68,16 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
                 + ".xsd"
         );
 
+        if (!File.Exists(xsdFile))
+            return null; // XSD file not found
+
         var ds = new DataSet();
         using var reader = XmlReader.Create(xsdFile);
         ds.ReadXmlSchema(reader);
         return ds;
     }
 
-    private void AddRelations(DataSet ds, DataTable dt, Entity entity)
+    private static void AddRelations(DataSet ds, DataTable dt, Entity entity)
     {
         // Populate navigation properties based on dataset relations
         foreach (DataRelation rel in ds.Relations)
@@ -100,7 +104,7 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
         }
     }
 
-    private string? ExtractTableName(ClassDeclarationSyntax classNode)
+    private static string? ExtractTableName(ClassDeclarationSyntax classNode)
     {
         // look for the ctor whose name matches the class
         var ctor = classNode.Members
@@ -131,7 +135,7 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
 
 
 
-    private IEnumerable<EntityProperty> ExtractEntityProperties(DataTable dt)
+    private static IEnumerable<EntityProperty> ExtractEntityProperties(DataTable dt)
     {
         // Parse the DataColumn initializations in InitClass
         var primaryKeys = new HashSet<string>(dt.PrimaryKey.Select(pk => pk.ColumnName));
@@ -141,7 +145,7 @@ public class TypedDatasetEntitySyntaxWalker : CSharpSyntaxWalker
             {
                 Name = c.ColumnName,
                 Type = GetColumnType(c),
-                IsPrimaryKey = primaryKeys.Contains(c.ColumnName) || dt.Columns.Count == 1, // Fallback if no PK info
+                IsPrimaryKey = primaryKeys.Contains(c.ColumnName),
                 IsDbGenerated = c.AutoIncrement,
                 ColumnName = c.ColumnName,
                 DbType = c.DataType == typeof(string) && c.MaxLength > 0 ? $"NVARCHAR({c.MaxLength})" : null,
