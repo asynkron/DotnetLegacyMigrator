@@ -1,5 +1,6 @@
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Text.RegularExpressions;
 
 using DotnetLegacyMigrator.Models;
 
@@ -116,11 +117,35 @@ public class LinqToSqlContextSyntaxWalker : CSharpSyntaxWalker
 
     private List<ParameterMapping> GetParameters(MethodDeclarationSyntax method)
     {
-        return method.ParameterList.Parameters.Select(p => new ParameterMapping
+        return method.ParameterList.Parameters.Select(p =>
         {
-            Name = p.Identifier.ToString(),
-            Type = p.Type?.ToString() ?? string.Empty,
-            IsNullable = p.Type is NullableTypeSyntax
+            var direction = "Input";
+            if (p.Modifiers.Any(m => m.Kind() == SyntaxKind.OutKeyword))
+                direction = "Output";
+            else if (p.Modifiers.Any(m => m.Kind() == SyntaxKind.RefKeyword))
+                direction = "InputOutput";
+
+            int? size = null;
+            var attr = p.AttributeLists.SelectMany(a => a.Attributes)
+                .FirstOrDefault(a => a.Name.ToString().Contains("Parameter"));
+            var dbTypeArg = attr?.ArgumentList?.Arguments
+                .FirstOrDefault(arg => arg.NameEquals?.Name.Identifier.Text == "DbType");
+            var dbType = dbTypeArg?.Expression.ToString().Trim('"');
+            if (dbType != null)
+            {
+                var match = Regex.Match(dbType, @"\((\d+)\)");
+                if (match.Success && int.TryParse(match.Groups[1].Value, out var s))
+                    size = s;
+            }
+
+            return new ParameterMapping
+            {
+                Name = p.Identifier.ToString(),
+                Type = p.Type?.ToString() ?? string.Empty,
+                IsNullable = p.Type is NullableTypeSyntax,
+                Direction = direction,
+                Size = size
+            };
         }).ToList();
     }
 }

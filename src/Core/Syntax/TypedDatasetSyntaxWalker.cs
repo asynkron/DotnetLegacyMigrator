@@ -56,6 +56,8 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
                         {
                             Name = p.Name,
                             Type = p.SqlDbType,
+                            Direction = p.Direction,
+                            Size = p.Size > 0 ? p.Size : null
                         }).ToList() ?? new List<ParameterMapping>(),
 
                     };
@@ -156,9 +158,8 @@ public class TypedDatasetSyntaxWalker : CSharpSyntaxWalker
                 {
                     Name = p.Identifier.ToString(),
                     SqlDbType = p.Type?.ToString() ?? "Unknown",
-                    //SqlDbType = GetSqlDbTypeFromParameter(p),
-                    //Size = GetParameterSize(p),
-                    Direction = "Input" // Assuming method parameters are input by default
+                    Direction = p.Modifiers.Any(m => m.Kind() == SyntaxKind.OutKeyword) ? "Output" :
+                                p.Modifiers.Any(m => m.Kind() == SyntaxKind.RefKeyword) ? "InputOutput" : "Input"
                 }).ToList();
 
             var methodName = method.Identifier.ToString();
